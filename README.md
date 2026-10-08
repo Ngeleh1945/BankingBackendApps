@@ -1,0 +1,2 @@
+# BankingBackendApps
+Latihan Java - Springboot
