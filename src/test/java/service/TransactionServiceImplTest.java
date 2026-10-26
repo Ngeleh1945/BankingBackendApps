@@ -3,7 +3,7 @@ package service;
 import org.example.model.customer.BankAccount;
 import org.example.repository.customer.BankAccountRepository;
 import org.example.repository.services.TransactionHistoryRepository;
-import org.example.service.transaction.TransactionServiceImpl;
+import org.example.service.transaction.implementation.TransactionServiceImpl;
 import static org.junit.jupiter.api.Assertions.*;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -15,7 +15,6 @@ import static org.mockito.Mockito.*;
 
 import java.math.BigDecimal;
 import java.util.Optional;
-import java.util.UUID;
 
 public class TransactionServiceImplTest {
     @Mock

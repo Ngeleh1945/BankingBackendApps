@@ -7,14 +7,18 @@ import org.example.model.transaction.TransactionHistory;
 import org.example.repository.services.TransactionHistoryRepository;
 import org.springframework.stereotype.Repository;
 
+/**
+ * Implementation of Repository for transaction history.
+ */
 @Repository
 public class TransactionHistoryRepositoryImpl implements TransactionHistoryRepository {
-    @PersistenceContext
-    private EntityManager entityManager;
+  @PersistenceContext
+  private EntityManager entityManager;
 
-    @Override
-    @Transactional
-    public void save(TransactionHistory transactionHistory){
-        entityManager.merge(transactionHistory);
-    }
+  @Override
+  @Transactional
+  public TransactionHistory save(TransactionHistory transactionHistory) {
+    entityManager.persist(transactionHistory);
+    return transactionHistory;
+  }
 }

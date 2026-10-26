@@ -4,7 +4,7 @@ import java.util.Optional;
 import org.example.model.customer.BankAccount;
 
 /**
- * Interface BankAccount data.
+ * Repository Interface BankAccount for managing account bank data.
  */
 public interface BankAccountRepository {
   /**
