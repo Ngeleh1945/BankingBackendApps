@@ -9,4 +9,5 @@ public interface EmployeeManagementService {
     boolean addEmployees(Employee employee, String adminId);
     List<Employee> getAllEmployees(String adminId);
     Employee getEmployeeById(String employeeId);
+    Employee getEmployeeByUsername(String username);
 }

@@ -5,6 +5,8 @@ import lombok.RequiredArgsConstructor;
 import org.example.enums.EmployeeMessage;
 import org.example.enums.LoginMessage;
 import org.example.model.employee.Employee;
+import org.example.model.employee.EmployeeAccount;
+import org.example.repository.employee.EmployeeAccountRepository;
 import org.example.repository.employee.EmployeeRepository;
 import org.springframework.stereotype.Service;
 
@@ -16,6 +18,7 @@ import java.util.Optional;
 public class EmployeeManagementServiceImpl implements EmployeeManagementService {
     private final AuthEmployeeServiceImpl authEmployeeServiceImpl;
     private final EmployeeRepository employeeRepository;
+    private final EmployeeAccountRepository employeeAccountRepository;
 
     @Override
     @Transactional
@@ -50,6 +53,12 @@ public class EmployeeManagementServiceImpl implements EmployeeManagementService 
 
     @Override
     public Employee getEmployeeById(String employeeId){
+        return employeeRepository.findById(employeeId).orElseThrow(()-> new IllegalArgumentException("Employee dengan ID " + employeeId + " tidak ditemukan"));
+    }
+    @Override
+    public Employee getEmployeeByUsername(String username){
+        EmployeeAccount account = employeeAccountRepository.findByUsername(username).orElseThrow(()-> new IllegalArgumentException("Employee dengan username " + " tidak ditemukan"));
+        String employeeId = account.getEmployeeId();
         return employeeRepository.findById(employeeId).orElseThrow(()-> new IllegalArgumentException("Employee dengan ID " + employeeId + " tidak ditemukan"));
     }
 }

@@ -90,9 +90,10 @@ public class AuthEmployeeServiceImpl implements AuthEmployeeService {
     }
 
     @Override
-    public String generateToken(String username){
-        return Jwts.builder().setSubject(username)
-                .setIssuedAt(new Date(System.currentTimeMillis()))
+    public String generateToken(String employeeId) {
+        return Jwts.builder()
+                .setSubject(employeeId)
+                .setIssuedAt(new Date())
                 .setExpiration(new Date(System.currentTimeMillis() + expirationTime))
                 .signWith(getSigningKey(), SignatureAlgorithm.HS256)
                 .compact();

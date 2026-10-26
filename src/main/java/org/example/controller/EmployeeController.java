@@ -53,27 +53,14 @@ public class EmployeeController {
     @GetMapping("/profile")
     public ResponseEntity<?> getMyProfile(HttpServletRequest request){
         try {
-            String token = null;
-            if (request.getCookies() != null) {
-                for (Cookie cookie : request.getCookies()) {
-                    if ("accessToken".equals(cookie.getName())) {
-                        token = cookie.getValue();
-                        break;
-                    }
-                }
-            }
+            String currentUsername = SecurityContextHolder.getContext().getAuthentication().getName();
 
-            if (token == null) {
-                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Token tidak ditemukan");
-            }
-
-            String currentEmployeeId = SecurityContextHolder.getContext().getAuthentication().getName();
-
-            Employee employee = employeeManagementService.getEmployeeById(currentEmployeeId);
+            Employee employee = employeeManagementService.getEmployeeByUsername(currentUsername);
 
             return ResponseEntity.ok(employee);
         } catch (Exception e){
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Session habis!");
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Session habis: " + e.getMessage());
         }
     }
 }

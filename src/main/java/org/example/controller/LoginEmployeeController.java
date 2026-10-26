@@ -1,6 +1,7 @@
 package org.example.controller;
 
 import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -36,7 +37,15 @@ public class LoginEmployeeController {
     }
 
     @PostMapping("/login-employee")
-    public ResponseEntity<?> login(@Valid @RequestBody LoginRequest request, HttpServletResponse response){
+    public ResponseEntity<?> login(@Valid @RequestBody LoginRequest request, HttpServletRequest httpRequest, HttpServletResponse response){
+        if (httpRequest.getCookies() != null) {
+            for (Cookie cookie : httpRequest.getCookies()){
+                if ("accessToken".equals(cookie.getName()) && cookie.getValue() != null && !cookie.getValue().isEmpty()){
+                    return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("message", "Anda sudah login ditempat lain!"));
+                }
+            }
+        }
+
         boolean isSuccess = authEmployeeService.adminLogin(request.getUsername(), request.getPassword());
 
         if (isSuccess){
@@ -52,5 +61,10 @@ public class LoginEmployeeController {
         }else {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("message", "Login gagal!"));
         }
+    }
+
+    @GetMapping("/status")
+    public ResponseEntity<?> checkAuth(){
+        return ResponseEntity.ok().body("Session Active");
     }
 }

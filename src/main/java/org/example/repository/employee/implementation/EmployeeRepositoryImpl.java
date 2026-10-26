@@ -12,7 +12,8 @@ import java.util.List;
 import java.util.Optional;
 
 @Repository
-public class EmployeeRepositoryImpl implements EmployeeRepository {
+public class
+EmployeeRepositoryImpl implements EmployeeRepository {
     @PersistenceContext
     private EntityManager entityManager;
 
