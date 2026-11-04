@@ -14,7 +14,7 @@ import org.example.enums.TransactionType;
 import org.example.model.customer.BankAccount;
 import org.example.model.transaction.TransactionHistory;
 import org.example.repository.customer.BankAccountRepository;
-import org.example.repository.services.TransactionHistoryRepository;
+import org.example.repository.transaction.TransactionHistoryRepository;
 import org.example.service.transaction.TransactionService;
 import org.springframework.stereotype.Service;
 
@@ -83,7 +83,7 @@ public class TransactionServiceImpl implements TransactionService {
 
   private BankAccount getAccountNumber(String accountNumber, String message) {
     return bankAccountRepository
-        .findByAccountNumber(accountNumber)
+        .findById(accountNumber)
         .orElseThrow(() -> new IllegalArgumentException(message));
   }
 

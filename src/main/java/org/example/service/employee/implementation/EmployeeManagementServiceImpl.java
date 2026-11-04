@@ -2,9 +2,9 @@ package org.example.service.employee.implementation;
 
 import jakarta.transaction.Transactional;
 import java.util.List;
-import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.example.dto.employee.AddEmployeeRequest;
 import org.example.enums.EmployeeMessage;
 import org.example.enums.LoginMessage;
 import org.example.model.employee.Employee;
@@ -27,38 +27,63 @@ public class EmployeeManagementServiceImpl implements EmployeeManagementService 
 
   @Override
   @Transactional
-  public void addEmployees(Employee employee, String adminId) {
-    if (adminId == null || adminId.isBlank()) {
-      log.warn("Gagal menambah pegawai: Sesi admin tidak valid");
-      throw new IllegalStateException(LoginMessage.INVALIDSESSION.getDesc());
-    }
-
-    if (employee == null || employee.getEmployeeId() == null || employee
-        .getEmployeeId()
-        .isBlank()) {
-      log.warn("Gagal menambah pegawai: Data employee atau ID kosong");
-      throw new IllegalArgumentException(EmployeeMessage.CANNOT_NULL.getDesc());
-    }
-
-    Optional<Employee> existingEmployee = employeeRepository.findById(employee.getEmployeeId());
-    if (existingEmployee.isPresent()) {
-      log.warn("Gagal menambah pegawai: ID {} sudah terdaftar", employee.getEmployeeId());
+  public void addEmployees(AddEmployeeRequest request, String username) {
+    if (username == null || username.isBlank()) {
+      log.warn("Failed to add employee: Invalid admin session");
       throw new IllegalStateException(
-          String.format(EmployeeMessage.ALREADY_EXIST.getDesc(), employee.getEmployeeId()));
+          LoginMessage.INVALIDSESSION.getDesc()
+      );
     }
+
+    if (request == null
+        || request.getEmployeeId() == null
+        || request.getEmployeeId().isBlank()) {
+      log.warn("Failed to add employee: Employee data or ID is empty");
+      throw new IllegalArgumentException(
+          EmployeeMessage.CANNOT_NULL.getDesc()
+      );
+    }
+
+    String employeeId = request.getEmployeeId();
+
+    if (employeeRepository.findById(employeeId).isPresent()) {
+      log.warn("Failed to add employee: ID {} is already registered", employeeId);
+      throw new IllegalStateException(
+          String.format(
+              EmployeeMessage.ALREADY_EXIST.getDesc(),
+              employeeId
+          )
+      );
+    }
+
+    Employee employee = new Employee();
+    employee.setEmployeeId(employeeId);
+    employee.setNik(request.getNik());
+    employee.setFullName(request.getFullName());
+    employee.setPlaceOfBirth(request.getPlaceOfBirth());
+    employee.setDateOfBirth(request.getDateOfBirth());
+    employee.setAddress(request.getAddress());
+    employee.setPhoneNumber(request.getPhoneNumber());
+    employee.setPosition(request.getPosition());
+    employee.setBankNames(request.getBankNames());
+    employee.setAccountNumber(request.getAccountNumber());
+    employee.setNpwp(request.getNpwp());
+    employee.setSalary(request.getSalary());
 
     employeeRepository.save(employee);
-    log.info("Berhasil menambahkan pegawai baru dengan ID: {}", employee.getEmployeeId());
+
+    log.info("Admin {} added employee with ID: {}",
+        username, employeeId);
   }
 
   @Override
   public List<Employee> getAllEmployees(String adminId) {
     if (adminId == null || adminId.isBlank()) {
-      log.warn("Gagal mengambil daftar pegawai: Sesi admin tidak valid");
+      log.warn("Failed to retrieve employee list: Invalid admin session");
       throw new IllegalStateException(LoginMessage.INVALIDSESSION.getDesc());
     }
 
-    log.debug("Mengambil seluruh data pegawai oleh admin ID: {}", adminId);
+    log.debug("Fetching all employee data by admin ID: {}", adminId);
     return employeeRepository.findAll();
   }
 
@@ -67,9 +92,9 @@ public class EmployeeManagementServiceImpl implements EmployeeManagementService 
     return employeeRepository
         .findById(employeeId)
         .orElseThrow(() -> {
-          log.warn("Pencarian pegawai gagal: ID {} tidak ditemukan", employeeId);
+          log.warn("Employee search failed: ID {} not found", employeeId);
           return new IllegalArgumentException(
-              "Employee dengan ID " + employeeId + " tidak ditemukan");
+              "Employee with ID " + employeeId + " not found");
         });
   }
 
@@ -78,17 +103,17 @@ public class EmployeeManagementServiceImpl implements EmployeeManagementService 
     EmployeeAccount account = employeeAccountRepository
         .findByUsername(username)
         .orElseThrow(() -> {
-          log.warn("Pencarian akun pegawai gagal: Username {} tidak ditemukan", username);
-          return new IllegalArgumentException("Employee dengan username tidak ditemukan");
+          log.warn("Failed to find employee account: Username {} not found", username);
+          return new IllegalArgumentException("Employee with the specified username not found");
         });
 
     String employeeId = account.getEmployeeId();
     return employeeRepository
         .findById(employeeId)
         .orElseThrow(() -> {
-          log.warn("Data employee fisik tidak ditemukan untuk ID: {}", employeeId);
+          log.warn("Physical employee data not found for ID: {}", employeeId);
           return new IllegalArgumentException(
-              "Employee dengan ID " + employeeId + " tidak ditemukan");
+              "Employee with ID " + employeeId + " not found");
         });
   }
 }

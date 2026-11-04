@@ -1,20 +1,27 @@
 package org.example.controller;
 
-import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
+import java.time.Duration;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.example.dto.LoginRequest;
-import org.example.dto.RegisterRequest;
+import org.example.dto.auth.LoginRequest;
+import org.example.dto.auth.LoginResult;
+import org.example.dto.auth.LogoutResponse;
+import org.example.dto.auth.RegisterRequest;
 import org.example.model.employee.EmployeeAccount;
 import org.example.service.employee.AuthEmployeeService;
+import org.example.service.jwt.JwtService;
+import org.example.service.session.RedisSessionService;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -31,15 +38,17 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/api/auth")
 @RequiredArgsConstructor
-public class LoginEmployeeController {
+public class AuthEmployeeController {
   private final AuthEmployeeService authEmployeeService;
+  private final JwtService jwtService;
+  private final RedisSessionService sessionService;
 
   private static final String MESSAGE_KEY = "message";
+  private static final String TOKEN = "accessToken";
 
   @Value("${app.security.cookie.secure:false}")
   private boolean isCookieSecure;
 
-  // <--- PASTIKAN ADA 1 BARIS KOSONG DI SINI SEBELUM JAVADOC / METHOD
 
   /**
    * Registers a new employee account in the system.
@@ -48,7 +57,7 @@ public class LoginEmployeeController {
    * @param adminId the administrator ID retrieved from the request header
    * @return ResponseEntity with a success message or bad request error description
    */
-  @PostMapping("/register")
+  @PostMapping("/register-employee")
   public ResponseEntity<String> registerEmployeesAccount(
       @Valid @RequestBody RegisterRequest request, @RequestHeader("X-Admin-id") String adminId) {
     try {
@@ -67,71 +76,103 @@ public class LoginEmployeeController {
   }
 
   /**
-   * Authenticates an employee and generates a JWT token stored as an HTTP-only cookie.
+   * Authenticates an employee and sets an HTTP-only secure cookie containing the access token.
    *
-   * @param request     the login request body containing username and password
-   * @param httpRequest the HTTP servlet request used to check existing session cookies
-   * @param response    the HTTP servlet response used to attach the generated JWT cookie
-   * @return ResponseEntity containing a success message or unauthorized status on failure
+   * @param request  the login credentials containing username and password
+   * @param response the HTTP response used to add the access token cookie
+   * @return a response entity containing success message or unauthorized error if credentials fail
    */
   @PostMapping("/login-employee")
-  public ResponseEntity<Object> login(
+  public ResponseEntity<Map<String, String>> login(
       @Valid @RequestBody LoginRequest request,
-      HttpServletRequest httpRequest,
       HttpServletResponse response) {
 
-    log.info("[LOGIN] Request login diterima");
+    try {
+      LoginResult result = authEmployeeService.adminLogin(
+          request.getUsername(),
+          request.getPassword()
+      );
 
-    if (httpRequest.getCookies() != null) {
-      for (Cookie cookie : httpRequest.getCookies()) {
-        if ("accessToken".equals(cookie.getName())
-            && cookie.getValue() != null
-            && !cookie.getValue().isBlank()) {
+      ResponseCookie cookie = ResponseCookie
+          .from(TOKEN, result.getToken())
+          .httpOnly(true)
+          .secure(isCookieSecure)
+          .path("/")
+          .sameSite("Lax")
+          .maxAge(Duration.ofMinutes(30))
+          .build();
 
-          log.warn("[LOGIN] Cookie accessToken sudah ada");
+      response.addHeader(
+          HttpHeaders.SET_COOKIE,
+          cookie.toString()
+      );
 
-          return ResponseEntity
-              .status(HttpStatus.BAD_REQUEST)
-              .body(Map.of(
-                  MESSAGE_KEY,
-                  "Anda sudah login ditempat lain!"
-              ));
-        }
-      }
+      return ResponseEntity.ok(
+          Map.of(MESSAGE_KEY, "Login sukses!")
+      );
+
+    } catch (BadCredentialsException e) {
+      return ResponseEntity
+          .status(HttpStatus.UNAUTHORIZED)
+          .body(Map.of(
+              MESSAGE_KEY,
+              "Username atau password salah"
+          ));
     }
+  }
 
-    boolean isSuccess = authEmployeeService.adminLogin(
-        request.getUsername(),
-        request.getPassword()
-    );
+  /**
+   * Logs out the authenticated employee by invalidating their session and clearing
+   * the access token cookie.
+   *
+   * @param authentication the current authentication principal
+   * @param response       the HTTP response used to expire the token cookie
+   * @return a response entity indicating successful logout or unauthorized status if not logged in
+   */
+  @PostMapping("logout")
+  ResponseEntity<LogoutResponse> logout(
+      Authentication authentication,
+      HttpServletResponse response
+  ) {
+    if (authentication == null || !authentication.isAuthenticated()
+        || authentication instanceof AnonymousAuthenticationToken) {
+      ResponseCookie expiredCookie = ResponseCookie
+          .from(TOKEN, "")
+          .httpOnly(true)
+          .secure(isCookieSecure)
+          .path("/")
+          .sameSite("Lax")
+          .maxAge(Duration.ZERO)
+          .build();
 
-    if (!isSuccess) {
-      log.warn("[LOGIN] Autentikasi username/password gagal");
+      response.addHeader(HttpHeaders.SET_COOKIE,
+          expiredCookie.toString()
+      );
 
       return ResponseEntity
           .status(HttpStatus.UNAUTHORIZED)
-          .body(Map.of(MESSAGE_KEY, "Login gagal!"));
+          .body(new LogoutResponse("Belum login"));
     }
 
-    String token = authEmployeeService.generateToken(
-        request.getUsername()
+    String username = authentication.getName();
+    authEmployeeService.adminLogout(username);
+
+    ResponseCookie expiredCookie = ResponseCookie
+        .from(TOKEN, "")
+        .httpOnly(true)
+        .secure(isCookieSecure)
+        .path("/")
+        .sameSite("Lax")
+        .maxAge(Duration.ZERO)
+        .build();
+
+    response.addHeader(
+        HttpHeaders.SET_COOKIE,
+        expiredCookie.toString()
     );
+    log.info("Logout berhasil untuk username: {}", username);
 
-    Cookie jwtCookie = new Cookie("accessToken", token);
-    jwtCookie.setHttpOnly(true);
-    jwtCookie.setSecure(isCookieSecure);
-    jwtCookie.setPath("/");
-    jwtCookie.setMaxAge(24 * 60 * 60);
-
-    response.addCookie(jwtCookie);
-
-    log.info("[LOGIN] Autentikasi berhasil");
-    log.info("[LOGIN] Cookie accessToken ditambahkan ke response");
-    log.debug("[LOGIN] Cookie Secure={}", isCookieSecure);
-
-    return ResponseEntity.ok(
-        Map.of(MESSAGE_KEY, "Login sukses!")
-    );
+    return ResponseEntity.ok(new LogoutResponse("Logout berhasil"));
   }
 
   /**
@@ -155,13 +196,17 @@ public class LoginEmployeeController {
           authentication.isAuthenticated());
 
       log.info("[AUTH STATUS] Tipe Authentication = {}",
-          authentication.getClass().getSimpleName());
+          authentication
+              .getClass()
+              .getSimpleName());
 
       log.debug("[AUTH STATUS] Principal type = {}",
           authentication.getPrincipal() == null
               ? "null"
-              : authentication.getPrincipal()
-              .getClass().getSimpleName());
+              : authentication
+              .getPrincipal()
+              .getClass()
+              .getSimpleName());
     }
 
     if (authentication == null

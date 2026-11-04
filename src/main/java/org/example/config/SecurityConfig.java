@@ -29,22 +29,29 @@ public class SecurityConfig {
    * @throws Exception if an error occurs during configuration
    */
   @Bean
-  public SecurityFilterChain filterChain(@NotNull HttpSecurity httpSecurity) throws Exception {
+  public SecurityFilterChain filterChain(
+      HttpSecurity httpSecurity) throws Exception {
+
     httpSecurity
         .csrf(csrf -> csrf.disable())
-        .cors(cors -> {
-        })
+        .cors(cors -> {})
         .authorizeHttpRequests(auth -> auth
-            .requestMatchers("/api/auth/login", "/api/auth/login-employee", "/api/auth/register")
-            .permitAll()
-            .requestMatchers("/api/auth/status")
-            .authenticated()
-            .anyRequest()
-            .authenticated()
+            .requestMatchers(
+                "/api/auth/login",
+                "/api/auth/login-employee",
+                "/api/auth/register"
+            ).permitAll()
+            .anyRequest().authenticated()
         )
         .exceptionHandling(exceptions -> exceptions
-            .authenticationEntryPoint(new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED)))
-        .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
+            .authenticationEntryPoint(
+                new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED)
+            )
+        )
+        .addFilterBefore(
+            jwtAuthenticationFilter,
+            UsernamePasswordAuthenticationFilter.class
+        );
 
     return httpSecurity.build();
   }

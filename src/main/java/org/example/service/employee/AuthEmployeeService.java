@@ -1,5 +1,6 @@
 package org.example.service.employee;
 
+import org.example.dto.auth.LoginResult;
 import org.example.model.employee.EmployeeAccount;
 
 /**
@@ -22,23 +23,13 @@ public interface AuthEmployeeService {
    * @param password the raw password of the employee
    * @return true if authentication is successful
    */
-  boolean adminLogin(String username, String password);
+  LoginResult adminLogin(String username, String password);
 
   /**
-   * Generates a JWT token for the authenticated employee.
-   *
-   * @param username the username for which the token is generated
-   * @return the generated JWT token string
+   * Logout
+   * @param username
    */
-  String generateToken(String username);
-
-  /**
-   * Extracts the username from a given JWT token.
-   *
-   * @param token the JWT token string
-   * @return the username extracted from the token claims
-   */
-  String extractUsernameFromToken(String token);
+  void adminLogout(String username);
 
   /**
    * Retrieves an employee account by its username.

@@ -1,14 +1,9 @@
 package org.example.service.employee.implementation;
 
-import io.jsonwebtoken.Claims;
-import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.security.Keys;
-import java.security.Key;
-import java.time.Instant;
 import java.util.Optional;
-import javax.crypto.SecretKey;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.example.dto.auth.LoginResult;
 import org.example.enums.EmployeeAccountMessage;
 import org.example.enums.LoginMessage;
 import org.example.model.employee.Employee;
@@ -16,8 +11,11 @@ import org.example.model.employee.EmployeeAccount;
 import org.example.repository.employee.EmployeeAccountRepository;
 import org.example.repository.employee.EmployeeRepository;
 import org.example.service.employee.AuthEmployeeService;
+import org.example.service.jwt.JwtService;
+import org.example.service.session.RedisSessionService;
 import org.mindrot.jbcrypt.BCrypt;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.stereotype.Service;
 
 /**
@@ -29,15 +27,11 @@ import org.springframework.stereotype.Service;
 public class AuthEmployeeServiceImpl implements AuthEmployeeService {
   private final EmployeeAccountRepository authRepository;
   private final EmployeeRepository employeeRepository;
+  private final JwtService jwtService;
+  private final RedisSessionService redisSessionService;
 
-  @Value("${jwt.secret}")
-  private String secretKey;
-
-  private static final long EXPIRATION_TIME = 24L * 60 * 60;
-
-  private Key getSigningKey() {
-    return Keys.hmacShaKeyFor(secretKey.getBytes());
-  }
+  @Value("${app.security.cookie.secure:false}")
+  private boolean isCookieSecure;
 
   @Override
   public boolean registerEmployeesAccount(EmployeeAccount account, String adminId) {
@@ -61,61 +55,46 @@ public class AuthEmployeeServiceImpl implements AuthEmployeeService {
   }
 
   @Override
-  public boolean adminLogin(String username, String password) {
+  public LoginResult adminLogin(String username, String password) {
     if (username == null || password == null || username.isBlank() || password.isBlank()) {
       log.warn(LoginMessage.USERNAMEANDPASSWORD_ISNULL.getDesc());
-      return false;
+      throw new BadCredentialsException(LoginMessage.USERNAMEANDPASSWORD_ISNULL.getDesc());
     }
 
     EmployeeAccount user = authRepository
         .findByUsername(username)
-        .orElse(null);
-
-    if (user == null) {
-      log.warn(LoginMessage.ACCOUNT_NOTFOUND.getDesc());
-      return false;
-    }
+        .orElseThrow(() -> new BadCredentialsException(
+            LoginMessage.USERPASSWRONG.getDesc()
+        ));
 
     boolean cocok = BCrypt.checkpw(password, user.getPassword());
 
-    log.debug("Input password : {}", password);
-    log.debug("Hash database  : {}", user.getPassword());
     log.info("Password cocok : {}", cocok);
 
     if (!cocok) {
-      log.warn(LoginMessage.WRONGPASSWORD.getDesc());
-      return false;
+      log.error(LoginMessage.WRONGPASSWORD.getDesc());
+      throw new BadCredentialsException(LoginMessage.WRONGPASSWORD.getDesc());
     }
 
-    log.info("{}{}", LoginMessage.LOGINSUCCESS.getDesc(), searchName(user.getEmployeeId()));
-    return true;
+    String token = jwtService.generateToken(username);
+
+    boolean sessionCreated = redisSessionService.createSession(username, token);
+
+    if (!sessionCreated) {
+      log.warn(LoginMessage.SESSIONACTIVE.getDesc());
+
+      throw new IllegalStateException(LoginMessage.SESSIONACTIVE.getDesc());
+    }
+
+    log.info("{}{}", LoginMessage.LOGINSUCCESS.getDesc(),
+        searchName(user.getEmployeeId()));
+
+    return new LoginResult(username, token);
   }
 
   @Override
-  public String generateToken(String employeeId) {
-    Instant now = Instant.now();
-
-    long issuedAt = now.getEpochSecond();
-    long expiration = now.plusSeconds(EXPIRATION_TIME).getEpochSecond();
-
-    return Jwts.builder()
-        .subject(employeeId)
-        .claim("iat", issuedAt)
-        .claim("exp", expiration)
-        .signWith(getSigningKey())
-        .compact();
-  }
-
-  @Override
-  public String extractUsernameFromToken(String token) {
-    Claims claims = Jwts
-        .parser()
-        .verifyWith((SecretKey) getSigningKey())
-        .build()
-        .parseSignedClaims(token)
-        .getPayload();
-
-    return claims.getSubject();
+  public void adminLogout(String username) {
+    redisSessionService.deleteSession(username);
   }
 
   @Override

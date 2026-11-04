@@ -1,6 +1,7 @@
 package org.example.service.employee;
 
 import java.util.List;
+import org.example.dto.employee.AddEmployeeRequest;
 import org.example.model.employee.Employee;
 
 /**
@@ -10,10 +11,10 @@ public interface EmployeeManagementService {
   /**
    * Adds a new employee to the system.
    *
-   * @param employee the employee details to add
-   * @param adminId  the identifier of the admin performing the action
+   * @param request employee the employee details to add
+   * @param username  the identifier of the admin performing the action
    */
-  void addEmployees(Employee employee, String adminId);
+  void addEmployees(AddEmployeeRequest request, String username);
 
   /**
    * Retrieves a list of all employees.
