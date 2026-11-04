@@ -1,2 +1,2 @@
 # BankingBackendApps
-Latihan Java - Springboot
+Gabut - Springboot
