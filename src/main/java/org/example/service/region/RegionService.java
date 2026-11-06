@@ -3,6 +3,7 @@ package org.example.service.region;
 import java.util.List;
 import java.util.Optional;
 import org.example.dto.region.RegionRequest;
+import org.example.dto.region.RegionResponse;
 import org.example.model.region.Region;
 
 /**
@@ -17,7 +18,7 @@ public interface RegionService {
    * @param region the {@link Region} object to be added
    * @return the saved {@link Region} instance
    */
-  public Region addRegion(RegionRequest region);
+  public RegionResponse addRegion(RegionRequest region);
 
   /**
    * Finds a specific region by its unique region code identifier.
@@ -79,4 +80,11 @@ public interface RegionService {
    * @return a {@link List} of sub-district or village names as strings
    */
   List<String> getSubdistricts(String country, String state, String city, String district);
+
+  /**
+   * Retrieves a list of all state names available in the system.
+   *
+   * @return a {@link List} of state names as strings
+   */
+  List<String> getAllCity();
 }

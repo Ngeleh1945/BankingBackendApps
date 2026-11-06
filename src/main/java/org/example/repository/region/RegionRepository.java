@@ -92,9 +92,9 @@ public interface RegionRepository extends JpaRepository<Region, String> {
       """
       SELECT DISTINCT r.subDistrict
       FROM Region r
-      WHERE r.country = :country 
-        AND r.state = :state 
-        AND r.city = :city 
+      WHERE r.country = :country
+        AND r.state = :state
+        AND r.city = :city
         AND r.district = :district
       ORDER BY r.subDistrict
       """)
@@ -103,4 +103,17 @@ public interface RegionRepository extends JpaRepository<Region, String> {
       @Param("state") String state,
       @Param("city") String city,
       @Param("district") String district);
+
+  /**
+   * Retrieves a distinct list of all available states across all regions, sorted alphabetically.
+   *
+   * @return a {@link List} of state names as strings
+   */
+  @Query(
+      """
+      SELECT DISTINCT r.city
+      FROM Region r
+      ORDER BY r.city
+      """)
+  List<String> findAllCity();
 }

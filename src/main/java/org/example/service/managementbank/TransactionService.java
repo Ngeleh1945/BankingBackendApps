@@ -1,4 +1,4 @@
-package org.example.service.transaction;
+package org.example.service.managementbank;
 
 import java.math.BigDecimal;
 

@@ -1,4 +1,4 @@
-package org.example.model.transaction;
+package org.example.model.managementbank;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;

@@ -62,7 +62,6 @@ public class AuthEmployeeController {
       @Valid @RequestBody RegisterRequest request, @RequestHeader("X-Admin-id") String adminId) {
     try {
       EmployeeAccount account = new EmployeeAccount();
-      account.setEmployeeId(request.getEmployeeId());
       account.setUsername(request.getUsername());
       account.setPassword(request.getPassword());
       account.setRoleId(request.getRoleId());
@@ -87,38 +86,28 @@ public class AuthEmployeeController {
       @Valid @RequestBody LoginRequest request,
       HttpServletResponse response) {
 
-    try {
-      LoginResult result = authEmployeeService.adminLogin(
-          request.getUsername(),
-          request.getPassword()
-      );
+    LoginResult result = authEmployeeService.adminLogin(
+        request.getUsername(),
+        request.getPassword()
+    );
 
-      ResponseCookie cookie = ResponseCookie
-          .from(TOKEN, result.getToken())
-          .httpOnly(true)
-          .secure(isCookieSecure)
-          .path("/")
-          .sameSite("Lax")
-          .maxAge(Duration.ofMinutes(30))
-          .build();
+    ResponseCookie cookie = ResponseCookie
+        .from(TOKEN, result.getToken())
+        .httpOnly(true)
+        .secure(isCookieSecure)
+        .path("/")
+        .sameSite("Lax")
+        .maxAge(Duration.ofMinutes(30))
+        .build();
 
-      response.addHeader(
-          HttpHeaders.SET_COOKIE,
-          cookie.toString()
-      );
+    response.addHeader(
+        HttpHeaders.SET_COOKIE,
+        cookie.toString()
+    );
 
-      return ResponseEntity.ok(
-          Map.of(MESSAGE_KEY, "Login sukses!")
-      );
-
-    } catch (BadCredentialsException e) {
-      return ResponseEntity
-          .status(HttpStatus.UNAUTHORIZED)
-          .body(Map.of(
-              MESSAGE_KEY,
-              "Username atau password salah"
-          ));
-    }
+    return ResponseEntity.ok(
+        Map.of(MESSAGE_KEY, "Login success!")
+    );
   }
 
   /**
@@ -129,33 +118,58 @@ public class AuthEmployeeController {
    * @param response       the HTTP response used to expire the token cookie
    * @return a response entity indicating successful logout or unauthorized status if not logged in
    */
-  @PostMapping("logout")
-  ResponseEntity<LogoutResponse> logout(
+  @PostMapping("/logout")
+  public ResponseEntity<LogoutResponse> logout(
       Authentication authentication,
-      HttpServletResponse response
-  ) {
-    if (authentication == null || !authentication.isAuthenticated()
-        || authentication instanceof AnonymousAuthenticationToken) {
-      ResponseCookie expiredCookie = ResponseCookie
-          .from(TOKEN, "")
-          .httpOnly(true)
-          .secure(isCookieSecure)
-          .path("/")
-          .sameSite("Lax")
-          .maxAge(Duration.ZERO)
-          .build();
+      HttpServletResponse response) {
 
-      response.addHeader(HttpHeaders.SET_COOKIE,
-          expiredCookie.toString()
-      );
+    clearAuthCookie(response);
 
-      return ResponseEntity
-          .status(HttpStatus.UNAUTHORIZED)
-          .body(new LogoutResponse("Belum login"));
+    if (isAuthenticatedUser(authentication)) {
+      String username = authentication.getName();
+
+      authEmployeeService.adminLogout(username);
+
+      log.info("Logout berhasil untuk username: {}", username);
     }
 
-    String username = authentication.getName();
-    authEmployeeService.adminLogout(username);
+    return ResponseEntity.ok(
+        new LogoutResponse("Logout berhasil")
+    );
+  }
+
+  /**
+   * Verifies the current authentication status of the user session.
+   *
+   * @param authentication the Spring Security authentication object of the current request
+   * @return ResponseEntity indicating whether the session is active or unauthorized
+   */
+
+  @GetMapping("/status")
+  public ResponseEntity<Map<String, String>> checkAuth(
+      Authentication authentication) {
+
+    if (!isAuthenticatedUser(authentication)) {
+      return ResponseEntity
+          .status(HttpStatus.UNAUTHORIZED)
+          .body(Map.of(
+              MESSAGE_KEY,
+              "User is not authenticated"
+          ));
+    }
+
+    return ResponseEntity.ok(
+        Map.of(MESSAGE_KEY, "Session Active")
+    );
+  }
+
+  private boolean isAuthenticatedUser(Authentication authentication) {
+    return authentication != null
+        && authentication.isAuthenticated()
+        && !(authentication instanceof AnonymousAuthenticationToken);
+  }
+
+  private void clearAuthCookie(HttpServletResponse response) {
 
     ResponseCookie expiredCookie = ResponseCookie
         .from(TOKEN, "")
@@ -170,61 +184,5 @@ public class AuthEmployeeController {
         HttpHeaders.SET_COOKIE,
         expiredCookie.toString()
     );
-    log.info("Logout berhasil untuk username: {}", username);
-
-    return ResponseEntity.ok(new LogoutResponse("Logout berhasil"));
   }
-
-  /**
-   * Verifies the current authentication status of the user session.
-   *
-   * @param authentication the Spring Security authentication object of the current request
-   * @return ResponseEntity indicating whether the session is active or unauthorized
-   */
-
-  @GetMapping("/status")
-  public ResponseEntity<Object> checkAuth(
-      Authentication authentication,
-      HttpServletRequest request) {
-
-    log.info("[AUTH STATUS] Request masuk: {}", request.getRequestURI());
-
-    if (authentication == null) {
-      log.warn("[AUTH STATUS] Authentication = null");
-    } else {
-      log.info("[AUTH STATUS] Authenticated = {}",
-          authentication.isAuthenticated());
-
-      log.info("[AUTH STATUS] Tipe Authentication = {}",
-          authentication
-              .getClass()
-              .getSimpleName());
-
-      log.debug("[AUTH STATUS] Principal type = {}",
-          authentication.getPrincipal() == null
-              ? "null"
-              : authentication
-              .getPrincipal()
-              .getClass()
-              .getSimpleName());
-    }
-
-    if (authentication == null
-        || !authentication.isAuthenticated()
-        || authentication instanceof AnonymousAuthenticationToken) {
-
-      log.warn("[AUTH STATUS] Akses ditolak: belum terautentikasi");
-
-      return ResponseEntity
-          .status(HttpStatus.UNAUTHORIZED)
-          .body(Map.of(MESSAGE_KEY, "Belum Login"));
-    }
-
-    log.info("[AUTH STATUS] Autentikasi berhasil");
-
-    return ResponseEntity.ok(
-        Map.of(MESSAGE_KEY, "Session Active")
-    );
-  }
-
 }

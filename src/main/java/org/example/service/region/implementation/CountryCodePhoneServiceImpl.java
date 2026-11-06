@@ -20,13 +20,13 @@ public class CountryCodePhoneServiceImpl implements CountryCodePhoneService {
 
   @Override
   public CountryCodePhoneResponse addCountryCodePhone(CountryCodePhoneRequest request) {
-    CountryCodePhone entity = CountryCodePhone.builder()
+    CountryCodePhone countryCodePhone = CountryCodePhone.builder()
         .isoCode(request.getIsoCode())
         .country(request.getCountry())
         .countryTelephoneCodes(request.getCountryTelephoneCodes())
         .build();
 
-    CountryCodePhone saved = repository.save(entity);
+    CountryCodePhone saved = repository.save(countryCodePhone);
 
     return CountryCodePhoneResponse.builder()
         .isoCode(saved.getIsoCode())
@@ -46,11 +46,11 @@ public class CountryCodePhoneServiceImpl implements CountryCodePhoneService {
 
   @Override
   public void deleteCountryPhone(String isoCode) {
-    CountryCodePhone entity = repository.findById(isoCode)
+    CountryCodePhone countryCodePhone = repository.findById(isoCode)
         .orElseThrow(() ->
             new EntityNotFoundException("Country code phone cannot be found"));
 
-    repository.delete(entity);
+    repository.delete(countryCodePhone);
   }
 
   @Override

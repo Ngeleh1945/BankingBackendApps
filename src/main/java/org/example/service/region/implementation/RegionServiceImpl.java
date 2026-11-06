@@ -6,6 +6,7 @@ import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.example.dto.region.RegionRequest;
+import org.example.dto.region.RegionResponse;
 import org.example.model.region.Region;
 import org.example.repository.region.RegionRepository;
 import org.example.service.region.RegionService;
@@ -22,7 +23,7 @@ public class RegionServiceImpl implements RegionService {
   private final RegionRepository repository;
 
   @Override
-  public Region addRegion(RegionRequest request) {
+  public RegionResponse addRegion(RegionRequest request) {
     Region region = new Region();
     region.setRegionCode(request.getRegionCode());
     region.setCountry(request.getCountry());
@@ -31,7 +32,16 @@ public class RegionServiceImpl implements RegionService {
     region.setDistrict(request.getDistrict());
     region.setSubDistrict(request.getSubDistrict());
 
-    return repository.save(region);
+    repository.save(region);
+
+    return RegionResponse.builder()
+        .regionCode(region.getRegionCode())
+        .country(region.getCountry())
+        .state(region.getState())
+        .city(region.getCity())
+        .district(region.getDistrict())
+        .subdistrict(region.getSubDistrict())
+        .build();
   }
 
   @Override
@@ -74,5 +84,10 @@ public class RegionServiceImpl implements RegionService {
   @Override
   public List<String> getSubdistricts(String country, String state, String city, String district) {
     return repository.findSubdistricts(country, state, city, district);
+  }
+
+  @Override
+  public List<String> getAllCity() {
+    return repository.findAllCity();
   }
 }

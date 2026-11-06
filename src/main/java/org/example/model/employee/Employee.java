@@ -35,5 +35,4 @@ public class Employee {
   private String bankNames;
   private String accountNumber;
   private String npwp;
-  private String salary;
 }

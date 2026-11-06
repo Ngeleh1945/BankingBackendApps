@@ -1,17 +1,17 @@
 package org.example.controller;
 
-import jakarta.servlet.http.HttpServletRequest;
+import jakarta.validation.Valid;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.example.dto.employee.AddEmployeeResponse;
 import org.example.dto.employee.AddEmployeeRequest;
-import org.example.enums.EmployeeMessage;
+import org.example.dto.employee.ShowEmployeeResponse;
 import org.example.model.employee.Employee;
 import org.example.service.employee.EmployeeManagementService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -39,22 +39,31 @@ public class EmployeeController {
    *
    * @param request the {@link AddEmployeeRequest} object containing the new employee details
    *                to be saved.
-   * @param adminId the ID of the admin processing the request,
-   *                extracted from the {@code X-Admin-Id} request header.
-   * @return        a {@link ResponseEntity} with HTTP status 200 (OK) and a success message
-   *                if the creation succeeds, or HTTP status 400 (Bad Request)
-   *                with the corresponding error message if validation or business rules fail.
+   * @return a {@link ResponseEntity} with HTTP status 200 (OK) and a success message
+   *      if the creation succeeds, or HTTP status 400 (Bad Request)
+   *      with the corresponding error message if validation or business rules fail.
    */
-  @PostMapping("/add")
-  public ResponseEntity<String> addEmployee(@RequestBody AddEmployeeRequest request,
-                                            @RequestHeader("X-Admin-id") String adminId) {
+  @PostMapping("/add-employee")
+  public ResponseEntity<AddEmployeeResponse> addEmployee(
+      @Valid @RequestBody AddEmployeeRequest request) {
+
+    log.info("Received request to add employee");
+
     try {
-      employeeManagementService.addEmployees(request, adminId);
-      return ResponseEntity.ok(EmployeeMessage.ADD_SUCCESS.getDesc());
-    } catch (IllegalArgumentException | IllegalStateException e) {
+      log.debug("Employee request data: {}", request);
+
+      AddEmployeeResponse response =
+          employeeManagementService.addEmployees(request);
+
+      log.info("Employee successfully added");
+
       return ResponseEntity
-          .badRequest()
-          .body(e.getMessage());
+          .status(HttpStatus.CREATED)
+          .body(response);
+
+    } catch (Exception e) {
+      log.error("Failed to add employee. Error: {}", e.getMessage(), e);
+      throw e;
     }
   }
 
@@ -65,26 +74,15 @@ public class EmployeeController {
    * to automatically extract the username of the currently logged-in user
    * for authorization and tracking purposes.</p>
    *
-   * @param authentication The {@link Authentication} instance containing security details
-   *                       of the authenticated user making the request.
    * @return A {@link ResponseEntity} containing a list of {@link Employee} objects
-   *                       with HTTP status 200 (OK) if successful, or HTTP status 400 (Bad Request)
-   *                       with an error message if an illegal state occurs.
+   *      with HTTP status 200 (OK) if successful, or HTTP status 400 (Bad Request)
+   *      with an error message if an illegal state occurs.
    */
   @GetMapping("/show-employee")
-  public ResponseEntity<Object> getAllEmployees(Authentication authentication) {
-    try {
-      String username = authentication.getName();
+  public ResponseEntity<Object> getAllEmployees() {
+    List<ShowEmployeeResponse> employees = employeeManagementService.getAllEmployees();
 
-      List<Employee> employees = employeeManagementService.getAllEmployees(username);
-
-      return ResponseEntity.ok(employees);
-
-    } catch (IllegalStateException e) {
-      return ResponseEntity
-          .badRequest()
-          .body(e.getMessage());
-    }
+    return ResponseEntity.ok(employees);
   }
 
   /**
@@ -100,9 +98,9 @@ public class EmployeeController {
    * @param adminId    The ID of the admin requesting the data,
    *                   extracted from the {@code X-Admin-Id} request header.
    * @return A {@link ResponseEntity} containing the found {@link Employee} object
-   *                   with HTTP status 200 (OK) if successful, or HTTP status 400 (Bad Request)
-   *                   with an error message if the employee is not found
-   *                   or an illegal argument occurs.
+   *      with HTTP status 200 (OK) if successful, or HTTP status 400 (Bad Request)
+   *      with an error message if the employee is not found
+   *      or an illegal argument occurs.
    */
   @GetMapping("/{employeeId}")
   public ResponseEntity<Object> getEmployeeId(
@@ -125,10 +123,10 @@ public class EmployeeController {
    * then queries the database to fetch the corresponding employee profile data.</p>
    *
    * @param authentication the HTTP servlet request object associated with the current call.
-   * @return        a {@link ResponseEntity} containing the employee's profile data
-   *                with HTTP status 200 (OK) if successful, or HTTP status 401 (Unauthorized)
-   *                with a session expiration message if an exception
-   *                or authentication error occurs.
+   * @return a {@link ResponseEntity} containing the employee's profile data
+   *      with HTTP status 200 (OK) if successful, or HTTP status 401 (Unauthorized)
+   *      with a session expiration message if an exception
+   *      or authentication error occurs.
    */
   @GetMapping("/profile")
   public ResponseEntity<Object> getMyProfile(

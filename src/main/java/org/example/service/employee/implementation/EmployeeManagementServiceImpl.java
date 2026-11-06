@@ -4,9 +4,10 @@ import jakarta.transaction.Transactional;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.example.dto.employee.AddEmployeeResponse;
 import org.example.dto.employee.AddEmployeeRequest;
+import org.example.dto.employee.ShowEmployeeResponse;
 import org.example.enums.EmployeeMessage;
-import org.example.enums.LoginMessage;
 import org.example.model.employee.Employee;
 import org.example.model.employee.EmployeeAccount;
 import org.example.repository.employee.EmployeeAccountRepository;
@@ -21,44 +22,27 @@ import org.springframework.stereotype.Service;
 @Service
 @RequiredArgsConstructor
 public class EmployeeManagementServiceImpl implements EmployeeManagementService {
-  private final AuthEmployeeServiceImpl authEmployeeServiceImpl;
-  private final EmployeeRepository employeeRepository;
+  private final EmployeeRepository repository;
   private final EmployeeAccountRepository employeeAccountRepository;
 
   @Override
   @Transactional
-  public void addEmployees(AddEmployeeRequest request, String username) {
-    if (username == null || username.isBlank()) {
-      log.warn("Failed to add employee: Invalid admin session");
-      throw new IllegalStateException(
-          LoginMessage.INVALIDSESSION.getDesc()
-      );
-    }
+  public AddEmployeeResponse addEmployees(AddEmployeeRequest request) {
 
-    if (request == null
-        || request.getEmployeeId() == null
-        || request.getEmployeeId().isBlank()) {
-      log.warn("Failed to add employee: Employee data or ID is empty");
-      throw new IllegalArgumentException(
-          EmployeeMessage.CANNOT_NULL.getDesc()
-      );
-    }
+    String nik = request.getNik();
 
-    String employeeId = request.getEmployeeId();
-
-    if (employeeRepository.findById(employeeId).isPresent()) {
-      log.warn("Failed to add employee: ID {} is already registered", employeeId);
+    if (repository.findByNik(nik).isPresent()) {
       throw new IllegalStateException(
           String.format(
               EmployeeMessage.ALREADY_EXIST.getDesc(),
-              employeeId
+              nik
           )
       );
     }
 
     Employee employee = new Employee();
-    employee.setEmployeeId(employeeId);
-    employee.setNik(request.getNik());
+    employee.setEmployeeId(generateId());
+    employee.setNik(nik);
     employee.setFullName(request.getFullName());
     employee.setPlaceOfBirth(request.getPlaceOfBirth());
     employee.setDateOfBirth(request.getDateOfBirth());
@@ -68,28 +52,41 @@ public class EmployeeManagementServiceImpl implements EmployeeManagementService 
     employee.setBankNames(request.getBankNames());
     employee.setAccountNumber(request.getAccountNumber());
     employee.setNpwp(request.getNpwp());
-    employee.setSalary(request.getSalary());
 
-    employeeRepository.save(employee);
+    repository.save(employee);
 
-    log.info("Admin {} added employee with ID: {}",
-        username, employeeId);
+    return AddEmployeeResponse.builder()
+        .employeeId(employee.getEmployeeId())
+        .nik(employee.getNik())
+        .fullName(employee.getFullName())
+        .placeOfBirth(employee.getPlaceOfBirth())
+        .dateOfBirth(employee.getDateOfBirth())
+        .address(employee.getAddress())
+        .phoneNumber(employee.getPhoneNumber())
+        .position(employee.getPosition())
+        .bankNames(employee.getBankNames())
+        .accountNumber(employee.getAccountNumber())
+        .npwp(employee.getNpwp())
+        .build();
   }
 
   @Override
-  public List<Employee> getAllEmployees(String adminId) {
-    if (adminId == null || adminId.isBlank()) {
-      log.warn("Failed to retrieve employee list: Invalid admin session");
-      throw new IllegalStateException(LoginMessage.INVALIDSESSION.getDesc());
-    }
-
-    log.debug("Fetching all employee data by admin ID: {}", adminId);
-    return employeeRepository.findAll();
+  public List<ShowEmployeeResponse> getAllEmployees() {
+    return repository
+        .findAll()
+        .stream()
+        .map(banks -> ShowEmployeeResponse
+            .builder()
+            .employeeId(banks.getEmployeeId())
+            .fullName(banks.getFullName())
+            .position(banks.getPosition())
+            .build())
+        .toList();
   }
 
   @Override
   public Employee getEmployeeById(String employeeId) {
-    return employeeRepository
+    return repository
         .findById(employeeId)
         .orElseThrow(() -> {
           log.warn("Employee search failed: ID {} not found", employeeId);
@@ -108,12 +105,25 @@ public class EmployeeManagementServiceImpl implements EmployeeManagementService 
         });
 
     String employeeId = account.getEmployeeId();
-    return employeeRepository
+    return repository
         .findById(employeeId)
         .orElseThrow(() -> {
           log.warn("Physical employee data not found for ID: {}", employeeId);
           return new IllegalArgumentException(
               "Employee with ID " + employeeId + " not found");
         });
+  }
+
+  private String generateId() {
+    String prefix = "BRM";
+
+    int lastNumber = repository.findAll()
+        .stream()
+        .map(Employee::getEmployeeId)
+        .filter(id -> id != null && id.matches("^BRM\\d+$"))
+        .mapToInt(id -> Integer.parseInt(id.substring(prefix.length())))
+        .max()
+        .orElse(0);
+    return prefix + (lastNumber + 1);
   }
 }

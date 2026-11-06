@@ -1,6 +1,6 @@
-package org.example.repository.transaction;
+package org.example.repository.managementbank;
 
-import org.example.model.transaction.TransactionHistory;
+import org.example.model.managementbank.TransactionHistory;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 /**
