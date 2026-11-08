@@ -1,9 +1,16 @@
 package org.example.employee.repository;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.assertThatCode;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.time.LocalDate;
+import java.util.List;
+import java.util.UUID;
+import java.util.concurrent.CyclicBarrier;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.stream.Stream;
 import org.example.constant.BankConstant;
 import org.example.model.employee.Employee;
@@ -15,7 +22,12 @@ import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionTemplate;
 
 @DataJpaTest
 @ActiveProfiles("test")
@@ -25,6 +37,9 @@ import org.springframework.test.context.ActiveProfiles;
 class EmployeeRepositoryTest {
   @Autowired
   private EmployeeRepository repository;
+
+  @Autowired
+  private PlatformTransactionManager transactionManager;
 
   @Test
   void shouldSaveEmployee() {
@@ -91,5 +106,139 @@ class EmployeeRepositoryTest {
     employee.setNpwp("11212");
 
     return employee;
+  }
+
+  @Test
+  void shouldFindEmployeeById(){
+    Employee employee = createEmployee("BRM20", "11155");
+
+    repository.saveAndFlush(employee);
+
+    var result = repository.findById("BRM20");
+
+    assertThat(result).isPresent();
+    assertThat(result.get().getEmployeeId()).isEqualTo("BRM20");
+    assertThat(result.get().getFullName()).isEqualTo("Mika");
+    assertThat(result.get().getAddress()).isEqualTo("Semarang");
+  }
+
+  @Test
+  void shouldReturnEmptyWhenEmployeeNotFound() {
+    var result = repository.findById("NOT-EXIST");
+
+    assertThat(result).isEmpty();
+  }
+
+  @Test
+  void shouldUpdateEmployee() {
+    Employee employee = createEmployee("BRM20", "11155");
+
+    repository.saveAndFlush(employee);
+
+    Employee existingEmployee = repository.findById("BRM20").orElseThrow();
+
+    existingEmployee.setFullName("Joko");
+    existingEmployee.setAddress("Bandung");
+    existingEmployee.setPosition("Admin");
+
+    Employee updated = repository.saveAndFlush(existingEmployee);
+
+    assertThat(updated.getEmployeeId()).isEqualTo("BRM20");
+    assertThat(updated.getFullName()).isEqualTo("Joko");
+    assertThat(updated.getAddress()).isEqualTo("Bandung");
+    assertThat(updated.getPosition()).isEqualTo("Admin");
+
+  }
+
+  @Test
+  void shouldDeleteEmployee() {
+    Employee employee = createEmployee("BRM20", "11155");
+
+    repository.saveAndFlush(employee);
+
+    repository.deleteById("BRM20");
+    repository.flush();
+
+    var result = repository.findByNik("11155");
+
+    assertThat(result).isEmpty();
+  }
+
+  @Test
+  void shouldNotThrowWhenDeletingNonExistingEmployee() {
+    assertThatCode(() -> repository.deleteById("NOT-EXIST"))
+        .doesNotThrowAnyException();
+  }
+
+  @Test
+  @Transactional(propagation = Propagation.NOT_SUPPORTED)
+  void shouldAllowOnlyOneInsertWhenSameIdSubmittedConcurrently() throws Exception {
+
+    String employeeId = "CT" + UUID.randomUUID()
+        .toString().replace("-", "");
+
+    CyclicBarrier barrier = new CyclicBarrier(2);
+
+    TransactionTemplate transactionTemplate =
+        new TransactionTemplate(transactionManager);
+
+    Employee datas1 = createEmployee(employeeId, "52345");
+    Employee datas2 = createEmployee(employeeId, "52344");
+
+    try {
+      try (ExecutorService executorService =
+               Executors.newFixedThreadPool(2)) {
+
+        Future<Boolean> threadA = executorService.submit(() -> {
+          try {
+            transactionTemplate.execute(status -> {
+              try {
+                barrier.await();
+              } catch (Exception e) {
+                throw new IllegalStateException(e);
+              }
+
+              repository.saveAndFlush(datas1);
+              return null;
+            });
+
+            return true;
+
+          } catch (DataIntegrityViolationException e) {
+            return false;
+          }
+        });
+
+        Future<Boolean> threadB = executorService.submit(() -> {
+          try {
+            transactionTemplate.execute(status -> {
+              try {
+                barrier.await();
+              } catch (Exception e) {
+                throw new IllegalStateException(e);
+              }
+
+              repository.saveAndFlush(datas2);
+              return null;
+            });
+
+            return true;
+
+          } catch (DataIntegrityViolationException e) {
+            return false;
+          }
+        });
+
+        List<Boolean> result = List.of(
+            threadA.get(),
+            threadB.get()
+        );
+
+        assertThat(result).containsExactlyInAnyOrder(true, false);
+      }
+
+    } finally {
+      repository.deleteById(employeeId);
+    }
   }
 }
