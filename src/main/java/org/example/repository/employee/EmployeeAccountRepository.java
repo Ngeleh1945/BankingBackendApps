@@ -1,6 +1,5 @@
 package org.example.repository.employee;
 
-import java.util.List;
 import java.util.Optional;
 import org.example.model.employee.EmployeeAccount;
 import org.springframework.data.jpa.repository.JpaRepository;

@@ -11,8 +11,8 @@ target/
 *.iws
 *.iml
 *.ipr
-**/src/main/resources/application.properties
-!**/src/main/resources/application.properties.example
+**/src/main/org.example.resources/application.properties
+!**/src/main/org.example.resources/application.properties.example
 
 ### Eclipse ###
 .apt_generated

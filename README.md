@@ -37,4 +37,4 @@ This project is continuously developed with a focus on:
 
 - Clean and maintainable code structure.
 - Separation of concerns between application layers.
-- Repository and service layer design.
+- Repository and org.example.service layer design.

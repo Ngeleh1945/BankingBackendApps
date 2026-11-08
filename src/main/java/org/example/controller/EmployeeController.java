@@ -4,8 +4,8 @@ import jakarta.validation.Valid;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.example.dto.employee.AddEmployeeResponse;
 import org.example.dto.employee.AddEmployeeRequest;
+import org.example.dto.employee.AddEmployeeResponse;
 import org.example.dto.employee.ShowEmployeeResponse;
 import org.example.model.employee.Employee;
 import org.example.service.employee.EmployeeManagementService;
@@ -16,7 +16,6 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -33,15 +32,12 @@ public class EmployeeController {
   /**
    * Adds a new employee record to the system.
    *
-   * <p>This method receives employee data from the request body and the admin ID
-   * performing the action from the HTTP header (<code>X-Admin-id</code>)
-   * for auditing or authorization verification purposes.</p>
+   * <p>This method receives validated employee registration details from the request body,
+   * processes the creation through the org.example.service layer, and logs the execution lifecycle.</p>
    *
-   * @param request the {@link AddEmployeeRequest} object containing the new employee details
-   *                to be saved.
-   * @return a {@link ResponseEntity} with HTTP status 200 (OK) and a success message
-   *      if the creation succeeds, or HTTP status 400 (Bad Request)
-   *      with the corresponding error message if validation or business rules fail.
+   * @param request the {@link AddEmployeeRequest} object containing the new employee data.
+   * @return a {@link ResponseEntity} containing the {@link AddEmployeeResponse} and
+   *      HTTP status 201 (Created) upon successful persistence.
    */
   @PostMapping("/add-employee")
   public ResponseEntity<AddEmployeeResponse> addEmployee(
@@ -68,15 +64,10 @@ public class EmployeeController {
   }
 
   /**
-   * Retrieves a list of all employee records from the system.
+   * Retrieves a list of all employee records registered in the system.
    *
-   * <p>This method utilizes the security context via the {@link Authentication} object
-   * to automatically extract the username of the currently logged-in user
-   * for authorization and tracking purposes.</p>
-   *
-   * @return A {@link ResponseEntity} containing a list of {@link Employee} objects
-   *      with HTTP status 200 (OK) if successful, or HTTP status 400 (Bad Request)
-   *      with an error message if an illegal state occurs.
+   * @return a {@link ResponseEntity} containing a list of {@link ShowEmployeeResponse} objects
+   *      with HTTP status 200 (OK).
    */
   @GetMapping("/show-employee")
   public ResponseEntity<Object> getAllEmployees() {
@@ -88,24 +79,15 @@ public class EmployeeController {
   /**
    * Retrieves specific employee details based on the provided employee ID.
    *
-   * <p>This method fetches a single employee record using the given {@code employeeId} path
-   * variable
-   * and validates the requester's authorization using the admin ID from the HTTP header
-   * (<code>X-Admin-Id</code>).</p>
+   * <p>This method queries a single employee record using the specified path variable.</p>
    *
-   * @param employeeId The unique identifier of the employee to be retrieved,
-   *                   passed as a path variable.
-   * @param adminId    The ID of the admin requesting the data,
-   *                   extracted from the {@code X-Admin-Id} request header.
-   * @return A {@link ResponseEntity} containing the found {@link Employee} object
-   *      with HTTP status 200 (OK) if successful, or HTTP status 400 (Bad Request)
-   *      with an error message if the employee is not found
-   *      or an illegal argument occurs.
+   * @param employeeId the unique identifier of the target employee.
+   * @return a {@link ResponseEntity} containing the found {@link Employee} object with
+   *      HTTP status 200 (OK), or HTTP status 400 (Bad Request) if validation or lookup fails.
    */
   @GetMapping("/{employeeId}")
   public ResponseEntity<Object> getEmployeeId(
-      @PathVariable String employeeId,
-      @RequestHeader("X-Admin-Id") String adminId) {
+      @PathVariable String employeeId) {
     try {
       Employee employee = employeeManagementService.getEmployeeById(employeeId);
       return ResponseEntity.ok(employee);
@@ -119,14 +101,12 @@ public class EmployeeController {
   /**
    * Retrieves the profile information of the currently authenticated employee.
    *
-   * <p>This method extracts the username of the active session from the security context,
-   * then queries the database to fetch the corresponding employee profile data.</p>
+   * <p>This method extracts the active username from the Spring Security context
+   * to fetch the corresponding employee record.</p>
    *
-   * @param authentication the HTTP servlet request object associated with the current call.
-   * @return a {@link ResponseEntity} containing the employee's profile data
-   *      with HTTP status 200 (OK) if successful, or HTTP status 401 (Unauthorized)
-   *      with a session expiration message if an exception
-   *      or authentication error occurs.
+   * @param authentication the current security authentication object containing session details.
+   * @return a {@link ResponseEntity} containing the {@link Employee} profile data
+   *      with HTTP status 200 (OK).
    */
   @GetMapping("/profile")
   public ResponseEntity<Object> getMyProfile(

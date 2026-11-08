@@ -130,11 +130,11 @@ public class AuthEmployeeController {
 
       authEmployeeService.adminLogout(username);
 
-      log.info("Logout berhasil untuk username: {}", username);
+      log.info("Logout successful for username: {}", username);
     }
 
     return ResponseEntity.ok(
-        new LogoutResponse("Logout berhasil")
+        new LogoutResponse("Logout successful")
     );
   }
 

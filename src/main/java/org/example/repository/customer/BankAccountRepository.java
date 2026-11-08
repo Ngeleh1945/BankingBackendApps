@@ -1,6 +1,5 @@
 package org.example.repository.customer;
 
-import java.util.Optional;
 import org.example.model.customer.BankAccount;
 import org.springframework.data.jpa.repository.JpaRepository;
 

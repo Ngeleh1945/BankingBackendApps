@@ -1,6 +1,7 @@
+package org.example;
+
 import org.junit.jupiter.api.Test;
 import org.mindrot.jbcrypt.BCrypt;
-import static org.junit.jupiter.api.Assertions.*;
 
 public class BycryptTest {
     @Test

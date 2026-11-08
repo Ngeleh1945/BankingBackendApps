@@ -33,14 +33,17 @@ public class SecurityConfig {
 
     httpSecurity
         .csrf(csrf -> csrf.disable())
-        .cors(cors -> {})
+        .cors(cors -> {
+        })
         .authorizeHttpRequests(auth -> auth
             .requestMatchers(
                 "/api/auth/login",
                 "/api/auth/login-employee",
                 "/api/auth/register"
-            ).permitAll()
-            .anyRequest().authenticated()
+            )
+            .permitAll()
+            .anyRequest()
+            .authenticated()
         )
         .exceptionHandling(exceptions -> exceptions
             .authenticationEntryPoint(

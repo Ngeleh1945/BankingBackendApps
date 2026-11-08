@@ -1,4 +1,4 @@
-package repository;
+package org.example.employee.repository;
 
 import org.example.model.employee.Employee;
 import org.example.repository.employee.EmployeeRepository;
@@ -44,7 +44,6 @@ class EmployeeRepositoryImplTest {
         dummy.setBankNames("BRI");
         dummy.setAccountNumber("2323");
         dummy.setNpwp("332");
-        dummy.setSalary("500000");
     }
 
     @AfterEach
