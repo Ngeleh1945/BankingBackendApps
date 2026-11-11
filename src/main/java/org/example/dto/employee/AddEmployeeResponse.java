@@ -12,6 +12,7 @@ public class AddEmployeeResponse {
   private String employeeId;
   private String nik;
   private String fullName;
+  private String gender;
   private String placeOfBirth;
   private LocalDate dateOfBirth;
   private String address;

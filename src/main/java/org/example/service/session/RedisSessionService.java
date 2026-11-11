@@ -14,15 +14,12 @@ public interface RedisSessionService {
   boolean createSession(String username, String token);
 
   /**
-   * Checks whether a token matches the user's active session.
    *
-   * @param username the username identifying the session
-   * @param token the token to validate
-   * @return true if the token matches an active session
+   * @param username
+   * @param sessionId
+   * @return
    */
-  boolean isSessionValid(String username, String token);
-
-  boolean validateAndRefreshSession(String username, String token);
+  boolean validateAndRefreshSession(String username, String sessionId);
 
   /**
    * Deletes the active session for a user.

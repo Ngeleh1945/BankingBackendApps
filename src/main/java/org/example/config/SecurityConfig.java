@@ -1,3 +1,4 @@
+
 package org.example.config;
 
 import lombok.RequiredArgsConstructor;
@@ -11,7 +12,8 @@ import org.springframework.security.web.authentication.HttpStatusEntryPoint;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
 /**
- * Security configuration for the application.
+ * Spring Security configuration class responsible for setting up security filters,
+ * CSRF protection, CORS policies, endpoint access rules, and authentication entry points.
  */
 @Configuration
 @EnableWebSecurity
@@ -21,11 +23,13 @@ public class SecurityConfig {
   private final JwtAuthenticationFilter jwtAuthenticationFilter;
 
   /**
-   * SetUp Security config.
+   * Configures the security filter chain for incoming HTTP requests.
+   * Disables CSRF, enables CORS, defines public and protected endpoints,
+   * configures unauthorized entry points, and registers the custom JWT authentication filter.
    *
-   * @param httpSecurity the http security configuration builder
-   * @return the security filter chain
-   * @throws Exception if an error occurs during configuration
+   * @param httpSecurity The HttpSecurity object to configure web-based security.
+   * @return The configured SecurityFilterChain instance.
+   * @throws Exception If an error occurs during security configuration.
    */
   @Bean
   public SecurityFilterChain filterChain(
@@ -33,13 +37,11 @@ public class SecurityConfig {
 
     httpSecurity
         .csrf(csrf -> csrf.disable())
-        .cors(cors -> {
-        })
+        .cors(cors -> {})
         .authorizeHttpRequests(auth -> auth
             .requestMatchers(
-                "/api/auth/login",
                 "/api/auth/login-employee",
-                "/api/auth/register"
+                "/api/auth/register-employee"
             )
             .permitAll()
             .anyRequest()
@@ -47,7 +49,9 @@ public class SecurityConfig {
         )
         .exceptionHandling(exceptions -> exceptions
             .authenticationEntryPoint(
-                new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED)
+                new HttpStatusEntryPoint(
+                    HttpStatus.UNAUTHORIZED
+                )
             )
         )
         .addFilterBefore(

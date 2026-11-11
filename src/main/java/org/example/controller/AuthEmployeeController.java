@@ -1,6 +1,5 @@
 package org.example.controller;
 
-import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import java.time.Duration;
@@ -15,13 +14,13 @@ import org.example.model.employee.EmployeeAccount;
 import org.example.service.employee.AuthEmployeeService;
 import org.example.service.jwt.JwtService;
 import org.example.service.session.RedisSessionService;
+import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
-import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -123,8 +122,6 @@ public class AuthEmployeeController {
       Authentication authentication,
       HttpServletResponse response) {
 
-    clearAuthCookie(response);
-
     if (isAuthenticatedUser(authentication)) {
       String username = authentication.getName();
 
@@ -132,6 +129,8 @@ public class AuthEmployeeController {
 
       log.info("Logout successful for username: {}", username);
     }
+
+    clearAuthCookie(response);
 
     return ResponseEntity.ok(
         new LogoutResponse("Logout successful")
@@ -169,8 +168,7 @@ public class AuthEmployeeController {
         && !(authentication instanceof AnonymousAuthenticationToken);
   }
 
-  private void clearAuthCookie(HttpServletResponse response) {
-
+  private void clearAuthCookie(@NotNull HttpServletResponse response) {
     ResponseCookie expiredCookie = ResponseCookie
         .from(TOKEN, "")
         .httpOnly(true)

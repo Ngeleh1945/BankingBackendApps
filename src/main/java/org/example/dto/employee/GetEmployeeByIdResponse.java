@@ -9,10 +9,11 @@ import lombok.Getter;
  */
 @Getter
 @Builder
-public class EmployeeResponse {
+public class GetEmployeeByIdResponse {
   private String employeeId;
   private String nik;
   private String fullName;
+  private String gender;
   private String placeOfBirth;
   private LocalDate dateOfBirth;
   private String address;

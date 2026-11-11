@@ -35,6 +35,8 @@ public class Employee {
   @Column(nullable = false)
   private String fullName;
   @Column(nullable = false)
+  private String gender;
+  @Column(nullable = false)
   private String placeOfBirth;
   @Column(nullable = false)
   private LocalDate dateOfBirth;

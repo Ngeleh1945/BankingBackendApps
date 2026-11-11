@@ -15,13 +15,12 @@ import org.springframework.stereotype.Service;
 @RequiredArgsConstructor
 public class RedisSessionServiceImpl implements RedisSessionService {
   private final StringRedisTemplate redisTemplate;
-  private static final String SESSION_PREFIX = "session";
+  private static final String SESSION_PREFIX = "session:";
   private static final Duration SESSION_TTL = Duration.ofMinutes(30);
 
   private String key(String username) {
     if (username == null) {
-      log.error("username kosong");
-      throw new IllegalArgumentException("Username tidak boleh kosong");
+      throw new IllegalArgumentException("Username cannot be blank");
     }
 
     return SESSION_PREFIX + username;
@@ -29,7 +28,6 @@ public class RedisSessionServiceImpl implements RedisSessionService {
 
   @Override
   public boolean createSession(String username, String token) {
-    String sessionKey = key(username);
     Boolean created = redisTemplate
         .opsForValue()
         .setIfAbsent(
@@ -38,45 +36,20 @@ public class RedisSessionServiceImpl implements RedisSessionService {
             SESSION_TTL
         );
 
-    log.info("Redis session key : {}", sessionKey);
-    log.info("Redis setIfAbsent result: {}", created);
-
-    log.info("Redis connection factory: {}",
-        redisTemplate.getConnectionFactory()
-            .getClass().getName());
-
-    log.info("Redis database: {}",
-        redisTemplate.getConnectionFactory()
-            .getConnection()
-            .serverCommands()
-            .info("server"));
-
-    if (Boolean.FALSE.equals(created)){
-      String storedToken = redisTemplate.opsForValue().get(sessionKey);
-
-      log.warn("Key sudah ada: {}", storedToken !=null);
-    }
     return Boolean.TRUE.equals(created);
   }
 
   @Override
-  public boolean isSessionValid(String username, String token) {
-    String storedToken = redisTemplate.opsForValue().get(key(username));
+  public boolean validateAndRefreshSession(String username, String sessionId) {
+    String sessionKey = key(username);
 
-    return storedToken != null && storedToken.equals(token);
-  }
+    String storedSessionId =
+        redisTemplate.opsForValue().get(sessionKey);
 
-  @Override
-  public boolean validateAndRefreshSession(String username, String token) {
-    String key = key(username);
-
-    String storedToken = redisTemplate.opsForValue().get(key);
-
-    if (storedToken == null || !storedToken.equals(token)) {
+    if (storedSessionId == null || !storedSessionId.equals(sessionId)) {
       return false;
     }
-
-    redisTemplate.expire(key, SESSION_TTL);
+    redisTemplate.expire(sessionKey, SESSION_TTL);
 
     return true;
   }

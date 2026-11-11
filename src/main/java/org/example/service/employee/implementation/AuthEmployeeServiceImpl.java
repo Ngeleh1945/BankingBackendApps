@@ -1,6 +1,7 @@
 package org.example.service.employee.implementation;
 
 import java.util.Optional;
+import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.example.dto.auth.LoginResult;
@@ -56,38 +57,29 @@ public class AuthEmployeeServiceImpl implements AuthEmployeeService {
 
   @Override
   public LoginResult adminLogin(String username, String password) {
-    if (username == null || password == null || username.isBlank() || password.isBlank()) {
-      log.warn(LoginMessage.USERNAMEANDPASSWORD_ISNULL.getDesc());
-      throw new BadCredentialsException(LoginMessage.USERNAMEANDPASSWORD_ISNULL.getDesc());
-    }
-
     EmployeeAccount user = authRepository
         .findByUsername(username)
         .orElseThrow(() -> new BadCredentialsException(
-            LoginMessage.USERPASSWRONG.getDesc()
+            LoginMessage.USERNAMEANDPASSWORD_ISNULL.getDesc()
         ));
 
-    boolean cocok = BCrypt.checkpw(password, user.getPassword());
+    boolean valid = BCrypt.checkpw(password, user.getPassword());
 
-    log.info("Password cocok : {}", cocok);
-
-    if (!cocok) {
-      log.error(LoginMessage.WRONGPASSWORD.getDesc());
-      throw new BadCredentialsException(LoginMessage.WRONGPASSWORD.getDesc());
+    if (!valid) {
+      throw new BadCredentialsException(
+          LoginMessage.WRONGPASSWORD.getDesc()
+      );
     }
 
-    String token = jwtService.generateToken(username);
+    String sessionId = UUID.randomUUID().toString();
 
-    boolean sessionCreated = redisSessionService.createSession(username, token);
+    String token = jwtService.generateToken(username, sessionId);
+
+    boolean sessionCreated = redisSessionService.createSession(username, sessionId);
 
     if (!sessionCreated) {
-      log.warn(LoginMessage.SESSIONACTIVE.getDesc());
-
       throw new IllegalStateException(LoginMessage.SESSIONACTIVE.getDesc());
     }
-
-    log.info("{}{}", LoginMessage.LOGINSUCCESS.getDesc(),
-        searchName(user.getEmployeeId()));
 
     return new LoginResult(username, token);
   }

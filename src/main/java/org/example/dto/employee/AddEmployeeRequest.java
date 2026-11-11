@@ -21,6 +21,8 @@ public class AddEmployeeRequest {
   private String nik;
   @NotBlank(message = "Name cannot be blank")
   private String fullName;
+  @NotBlank(message = "Gender cannot be blank")
+  private String gender;
   @NotBlank(message = "Place of birth cannot be blank")
   private String placeOfBirth;
   @NotNull(message = "Date of birth cannot be null")

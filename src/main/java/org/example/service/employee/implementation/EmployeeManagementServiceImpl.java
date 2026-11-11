@@ -1,11 +1,13 @@
 package org.example.service.employee.implementation;
 
+import jakarta.persistence.EntityNotFoundException;
 import jakarta.transaction.Transactional;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.example.dto.employee.AddEmployeeResponse;
 import org.example.dto.employee.AddEmployeeRequest;
+import org.example.dto.employee.AddEmployeeResponse;
+import org.example.dto.employee.GetEmployeeByIdResponse;
 import org.example.dto.employee.ShowEmployeeResponse;
 import org.example.enums.EmployeeMessage;
 import org.example.model.employee.Employee;
@@ -13,6 +15,7 @@ import org.example.model.employee.EmployeeAccount;
 import org.example.repository.employee.EmployeeAccountRepository;
 import org.example.repository.employee.EmployeeRepository;
 import org.example.service.employee.EmployeeManagementService;
+import org.jetbrains.annotations.NotNull;
 import org.springframework.stereotype.Service;
 
 /**
@@ -31,7 +34,9 @@ public class EmployeeManagementServiceImpl implements EmployeeManagementService 
 
     String nik = request.getNik();
 
-    if (repository.findByNik(nik).isPresent()) {
+    if (repository
+        .findByNik(nik)
+        .isPresent()) {
       throw new IllegalStateException(
           String.format(
               EmployeeMessage.ALREADY_EXIST.getDesc(),
@@ -44,6 +49,7 @@ public class EmployeeManagementServiceImpl implements EmployeeManagementService 
     employee.setEmployeeId(generateId());
     employee.setNik(nik);
     employee.setFullName(request.getFullName());
+    employee.setGender(request.getGender());
     employee.setPlaceOfBirth(request.getPlaceOfBirth());
     employee.setDateOfBirth(request.getDateOfBirth());
     employee.setAddress(request.getAddress());
@@ -55,10 +61,12 @@ public class EmployeeManagementServiceImpl implements EmployeeManagementService 
 
     repository.save(employee);
 
-    return AddEmployeeResponse.builder()
+    return AddEmployeeResponse
+        .builder()
         .employeeId(employee.getEmployeeId())
         .nik(employee.getNik())
         .fullName(employee.getFullName())
+        .gender(employee.getGender())
         .placeOfBirth(employee.getPlaceOfBirth())
         .dateOfBirth(employee.getDateOfBirth())
         .address(employee.getAddress())
@@ -79,20 +87,37 @@ public class EmployeeManagementServiceImpl implements EmployeeManagementService 
             .builder()
             .employeeId(banks.getEmployeeId())
             .fullName(banks.getFullName())
+            .gender(banks.getGender())
             .position(banks.getPosition())
             .build())
         .toList();
   }
 
   @Override
-  public Employee getEmployeeById(String employeeId) {
-    return repository
+  public GetEmployeeByIdResponse getEmployeeById(String employeeId) {
+    Employee employee = repository
         .findById(employeeId)
         .orElseThrow(() -> {
           log.warn("Employee search failed: ID {} not found", employeeId);
           return new IllegalArgumentException(
-              "Employee with ID " + employeeId + " not found");
+              messageNotFound(employeeId));
         });
+
+    return GetEmployeeByIdResponse
+        .builder()
+        .employeeId(employee.getEmployeeId())
+        .nik(employee.getNik())
+        .fullName(employee.getFullName())
+        .gender(employee.getGender())
+        .placeOfBirth(employee.getPlaceOfBirth())
+        .dateOfBirth(employee.getDateOfBirth())
+        .address(employee.getAddress())
+        .phoneNumber(employee.getPhoneNumber())
+        .position(employee.getPosition())
+        .bankNames(employee.getBankNames())
+        .accountNumber(employee.getAccountNumber())
+        .npwp(employee.getNpwp())
+        .build();
   }
 
   @Override
@@ -110,14 +135,69 @@ public class EmployeeManagementServiceImpl implements EmployeeManagementService 
         .orElseThrow(() -> {
           log.warn("Physical employee data not found for ID: {}", employeeId);
           return new IllegalArgumentException(
-              "Employee with ID " + employeeId + " not found");
+              messageNotFound(employeeId));
         });
   }
 
-  private String generateId() {
+  @Override
+  @Transactional
+  public void deleteEmployees(String employeeId) {
+    Employee employee = repository
+        .findById(employeeId)
+        .orElseThrow(() -> new EntityNotFoundException(
+            messageNotFound(employeeId)
+        ));
+
+    repository.delete(employee);
+  }
+
+  @Override
+  @Transactional
+  public AddEmployeeResponse update(
+      String employeeId,
+      AddEmployeeRequest request
+  ) {
+    Employee employee = repository
+        .findById(employeeId)
+        .orElseThrow(() -> new EntityNotFoundException(
+            messageNotFound(employeeId)
+        ));
+
+    employee.setNik(request.getNik());
+    employee.setFullName(request.getFullName());
+    employee.setGender(request.getGender());
+    employee.setPlaceOfBirth(request.getPlaceOfBirth());
+    employee.setDateOfBirth(request.getDateOfBirth());
+    employee.setAddress(request.getAddress());
+    employee.setPhoneNumber(request.getPhoneNumber());
+    employee.setPosition(request.getPosition());
+    employee.setBankNames(request.getBankNames());
+    employee.setAccountNumber(request.getAccountNumber());
+    employee.setNpwp(request.getNpwp());
+
+    Employee updatedEmployee = repository.save(employee);
+
+    return AddEmployeeResponse
+        .builder()
+        .nik(updatedEmployee.getNik())
+        .fullName(updatedEmployee.getFullName())
+        .gender(updatedEmployee.getGender())
+        .placeOfBirth(updatedEmployee.getPlaceOfBirth())
+        .dateOfBirth(updatedEmployee.getDateOfBirth())
+        .address(updatedEmployee.getAddress())
+        .phoneNumber(updatedEmployee.getPhoneNumber())
+        .position(updatedEmployee.getPosition())
+        .bankNames(updatedEmployee.getBankNames())
+        .accountNumber(updatedEmployee.getAccountNumber())
+        .npwp(updatedEmployee.getNpwp())
+        .build();
+  }
+
+  private @NotNull String generateId() {
     String prefix = "BRM";
 
-    int lastNumber = repository.findAll()
+    int lastNumber = repository
+        .findAll()
         .stream()
         .map(Employee::getEmployeeId)
         .filter(id -> id != null && id.matches("^BRM\\d+$"))
@@ -125,5 +205,9 @@ public class EmployeeManagementServiceImpl implements EmployeeManagementService 
         .max()
         .orElse(0);
     return prefix + (lastNumber + 1);
+  }
+
+  private String messageNotFound(String employeeId) {
+    return "Employee with ID " + employeeId + " not found";
   }
 }

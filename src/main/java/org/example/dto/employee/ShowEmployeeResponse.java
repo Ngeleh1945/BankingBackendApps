@@ -11,5 +11,6 @@ import lombok.Getter;
 public class ShowEmployeeResponse {
   private String employeeId;
   private String fullName;
+  private String gender;
   private String position;
 }

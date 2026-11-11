@@ -3,6 +3,7 @@ package org.example.service.employee;
 import java.util.List;
 import org.example.dto.employee.AddEmployeeResponse;
 import org.example.dto.employee.AddEmployeeRequest;
+import org.example.dto.employee.GetEmployeeByIdResponse;
 import org.example.dto.employee.ShowEmployeeResponse;
 import org.example.model.employee.Employee;
 
@@ -30,7 +31,7 @@ public interface EmployeeManagementService {
    * @param employeeId the unique identifier of the employee
    * @return the Employee instance if found
    */
-  Employee getEmployeeById(String employeeId);
+  GetEmployeeByIdResponse getEmployeeById(String employeeId);
 
   /**
    * Retrieves employee details by their associated account username.
@@ -39,4 +40,18 @@ public interface EmployeeManagementService {
    * @return the Employee instance if found
    */
   Employee getEmployeeByUsername(String username);
+
+  /**
+   *
+   * @param employeeId
+   */
+  void deleteEmployees(String employeeId);
+
+  /**
+   *
+   * @param employeeId
+   * @param request
+   * @return
+   */
+  AddEmployeeResponse update(String employeeId, AddEmployeeRequest request);
 }
