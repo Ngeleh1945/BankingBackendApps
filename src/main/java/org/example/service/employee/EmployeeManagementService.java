@@ -39,7 +39,7 @@ public interface EmployeeManagementService {
    * @param username the username associated with the employee account
    * @return the Employee instance if found
    */
-  Employee getEmployeeByUsername(String username);
+  ShowEmployeeResponse getEmployeeByUsername(String username);
 
   /**
    *

@@ -16,4 +16,12 @@ public interface EmployeeAccountRepository extends JpaRepository<EmployeeAccount
    * @return an Optional containing the EmployeeAccount if found, or empty otherwise
    */
   Optional<EmployeeAccount> findByUsername(String username);
+
+  /**
+   * Checks whether an employee account already exists based on the provided username.
+   *
+   * @param username the unique username to check
+   * @return true if an account with the given username exists, false otherwise
+   */
+  boolean existsByUsername(String username);
 }

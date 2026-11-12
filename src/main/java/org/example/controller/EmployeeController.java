@@ -11,6 +11,7 @@ import org.example.dto.employee.GetEmployeeByIdResponse;
 import org.example.dto.employee.ShowEmployeeResponse;
 import org.example.model.employee.Employee;
 import org.example.service.employee.EmployeeManagementService;
+import org.jetbrains.annotations.NotNull;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -45,27 +46,21 @@ public class EmployeeController {
    *      HTTP status 201 (Created) upon successful persistence.
    */
   @PostMapping("/add-employee")
-  public ResponseEntity<AddEmployeeResponse> addEmployee(
+  public ResponseEntity<ApiResponse<AddEmployeeResponse>> addEmployee(
       @Valid @RequestBody AddEmployeeRequest request) {
 
-    log.info("Received request to add employee");
+    AddEmployeeResponse response =
+        employeeManagementService.addEmployees(request);
 
-    try {
-      log.debug("Employee request data: {}", request);
+    ApiResponse<AddEmployeeResponse> apiResponse = ApiResponse.<AddEmployeeResponse>builder()
+        .success(true)
+        .message("Add employee successfully")
+        .data(response)
+        .build();
 
-      AddEmployeeResponse response =
-          employeeManagementService.addEmployees(request);
-
-      log.info("Employee successfully added");
-
-      return ResponseEntity
-          .status(HttpStatus.CREATED)
-          .body(response);
-
-    } catch (Exception e) {
-      log.error("Failed to add employee. Error: {}", e.getMessage(), e);
-      throw e;
-    }
+    return ResponseEntity
+        .status(HttpStatus.CREATED)
+        .body(apiResponse);
   }
 
   /**
@@ -75,10 +70,19 @@ public class EmployeeController {
    *      with HTTP status 200 (OK).
    */
   @GetMapping("/show-employee")
-  public ResponseEntity<Object> getAllEmployees() {
-    List<ShowEmployeeResponse> employees = employeeManagementService.getAllEmployees();
+  public ResponseEntity<ApiResponse<List<ShowEmployeeResponse>>> getAllEmployees() {
 
-    return ResponseEntity.ok(employees);
+    List<ShowEmployeeResponse> employees =
+        employeeManagementService.getAllEmployees();
+
+    ApiResponse<List<ShowEmployeeResponse>> apiResponse =
+        ApiResponse.<List<ShowEmployeeResponse>>builder()
+            .success(true)
+            .message("Employees retrieved successfully")
+            .data(employees)
+            .build();
+
+    return ResponseEntity.ok(apiResponse);
   }
 
   /**
@@ -98,7 +102,8 @@ public class EmployeeController {
         employeeManagementService.getEmployeeById(employeeId);
 
     return ResponseEntity.ok(
-        ApiResponse.<GetEmployeeByIdResponse>builder()
+        ApiResponse
+            .<GetEmployeeByIdResponse>builder()
             .success(true)
             .message("Employee successfully retrieved")
             .data(response)
@@ -117,17 +122,24 @@ public class EmployeeController {
    *      with HTTP status 200 (OK).
    */
   @GetMapping("/profile")
-  public ResponseEntity<Object> getMyProfile(
-      Authentication authentication) {
+  public ResponseEntity<ApiResponse<ShowEmployeeResponse>> getMyProfile(
+      @NotNull Authentication authentication) {
 
     String currentUsername = authentication.getName();
 
-    Employee employee =
+    ShowEmployeeResponse profile =
         employeeManagementService.getEmployeeByUsername(
             currentUsername
         );
 
-    return ResponseEntity.ok(employee);
+    ApiResponse<ShowEmployeeResponse> response =
+        ApiResponse.<ShowEmployeeResponse>builder()
+            .success(true)
+            .message("Profile retrieved successfully")
+            .data(profile)
+            .build();
+
+    return ResponseEntity.ok(response);
   }
 
   /**

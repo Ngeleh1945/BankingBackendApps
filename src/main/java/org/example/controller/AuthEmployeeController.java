@@ -10,6 +10,8 @@ import org.example.dto.auth.LoginRequest;
 import org.example.dto.auth.LoginResult;
 import org.example.dto.auth.LogoutResponse;
 import org.example.dto.auth.RegisterRequest;
+import org.example.dto.auth.RegisterResponse;
+import org.example.dto.common.ApiResponse;
 import org.example.model.employee.EmployeeAccount;
 import org.example.service.employee.AuthEmployeeService;
 import org.example.service.jwt.JwtService;
@@ -25,7 +27,6 @@ import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -53,24 +54,22 @@ public class AuthEmployeeController {
    * Registers a new employee account in the system.
    *
    * @param request the registration request body containing employee credentials and role details
-   * @param adminId the administrator ID retrieved from the request header
    * @return ResponseEntity with a success message or bad request error description
    */
   @PostMapping("/register-employee")
-  public ResponseEntity<String> registerEmployeesAccount(
-      @Valid @RequestBody RegisterRequest request, @RequestHeader("X-Admin-id") String adminId) {
-    try {
-      EmployeeAccount account = new EmployeeAccount();
-      account.setUsername(request.getUsername());
-      account.setPassword(request.getPassword());
-      account.setRoleId(request.getRoleId());
-      authEmployeeService.registerEmployeesAccount(account, adminId);
-      return ResponseEntity.ok("EmployeeAccountMessage.REGISTER_SUCCESS.getDesc()");
-    } catch (IllegalArgumentException | IllegalStateException e) {
-      return ResponseEntity
-          .badRequest()
-          .body(e.getMessage());
-    }
+  public ResponseEntity<ApiResponse<RegisterResponse>> registerEmployeesAccount(
+      @Valid @RequestBody RegisterRequest request) {
+    RegisterResponse response = authEmployeeService.registerEmployeesAccount(request);
+
+    ApiResponse<RegisterResponse> apiResponse = ApiResponse.<RegisterResponse>builder()
+        .success(true)
+        .message("Employee account registered successfully")
+        .data(response)
+        .build();
+
+    return ResponseEntity
+        .status(HttpStatus.CREATED)
+        .body(apiResponse);
   }
 
   /**

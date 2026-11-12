@@ -34,9 +34,7 @@ public class EmployeeManagementServiceImpl implements EmployeeManagementService 
 
     String nik = request.getNik();
 
-    if (repository
-        .findByNik(nik)
-        .isPresent()) {
+    if (repository.existsByNik(request.getNik())) {
       throw new IllegalStateException(
           String.format(
               EmployeeMessage.ALREADY_EXIST.getDesc(),
@@ -121,22 +119,32 @@ public class EmployeeManagementServiceImpl implements EmployeeManagementService 
   }
 
   @Override
-  public Employee getEmployeeByUsername(String username) {
+  public ShowEmployeeResponse getEmployeeByUsername(String username) {
+
     EmployeeAccount account = employeeAccountRepository
         .findByUsername(username)
         .orElseThrow(() -> {
-          log.warn("Failed to find employee account: Username {} not found", username);
-          return new IllegalArgumentException("Employee with the specified username not found");
+          log.warn("Employee account not found for username: {}", username);
+          return new IllegalArgumentException(
+              "Employee with the specified username not found"
+          );
         });
 
     String employeeId = account.getEmployeeId();
-    return repository
+
+    Employee employee = repository
         .findById(employeeId)
         .orElseThrow(() -> {
           log.warn("Physical employee data not found for ID: {}", employeeId);
-          return new IllegalArgumentException(
-              messageNotFound(employeeId));
+          return new IllegalArgumentException(messageNotFound(employeeId));
         });
+
+    return ShowEmployeeResponse.builder()
+        .employeeId(employee.getEmployeeId())
+        .fullName(employee.getFullName())
+        .gender(employee.getGender())
+        .position(employee.getPosition())
+        .build();
   }
 
   @Override

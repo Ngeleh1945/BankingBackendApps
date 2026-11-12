@@ -23,4 +23,13 @@ public interface EmployeeRepository extends JpaRepository<Employee, String> {
        WHERE e.nik = :nik
       """)
   Optional<Employee> findByNik(@Param("nik") String nik);
+
+  /**
+   * Checks whether an employee record already exists
+   * based on the provided NIK.
+   *
+   * @param nik the unique national identity number to check
+   * @return true if an employee with the given NIK exists, false otherwise
+   */
+  boolean existsByNik(String nik);
 }

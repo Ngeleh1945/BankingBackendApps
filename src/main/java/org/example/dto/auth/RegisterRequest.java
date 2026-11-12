@@ -1,20 +1,39 @@
 package org.example.dto.auth;
 
 import jakarta.validation.constraints.NotBlank;
-import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Getter;
-import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+/**
+ * Data Transfer Object (DTO) for handling new employee registration request payloads.
+ * Contains login credential information and role assignment details.
+ */
 @Getter
 @Setter
-@AllArgsConstructor
-@NoArgsConstructor
+@Builder
 public class RegisterRequest {
-    @NotBlank(message = "Username tidak boleh kosong")
-    private String username;
-    @NotBlank(message = "password tidak boleh kosong")
-    private String password;
-    @NotBlank(message = "role id tidak boleh kosong")
-    private String roleId;
+
+  private String employeeId;
+
+  /**
+   * Unique username for system authentication.
+   * Must not be blank or empty.
+   */
+  @NotBlank(message = "Username cannot be blank!")
+  private String username;
+
+  /**
+   * User account password.
+   * Required and will be encrypted using a password encoder in the service layer.
+   */
+  @NotBlank(message = "Password cannot be blank!")
+  private String password;
+
+  /**
+   * Role identifier (Role ID) assigned to the new user.
+   * Determines authorization boundaries within the application module.
+   */
+  @NotBlank(message = "Role id cannot be blank!")
+  private String roleId;
 }

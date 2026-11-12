@@ -2,6 +2,7 @@ package org.example.exception;
 
 import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
+import org.example.dto.common.ApiResponse;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.context.support.DefaultMessageSourceResolvable;
 import org.springframework.http.HttpStatus;
@@ -71,17 +72,21 @@ public class GlobalExceptionHandler {
    * @return a ResponseEntity containing the unauthorized message
    */
   @ExceptionHandler(BadCredentialsException.class)
-  public ResponseEntity<Map<String, String>> handleBadCredentials(
-      @NotNull BadCredentialsException e) {
+  public ResponseEntity<ApiResponse<Void>> handleBadCredentials(
+      BadCredentialsException e) {
 
     log.warn("Authentication failed: {}", e.getMessage());
 
+    ApiResponse<Void> response = ApiResponse
+        .<Void>builder()
+        .success(false)
+        .message(e.getMessage())
+        .data(null)
+        .build();
+
     return ResponseEntity
         .status(HttpStatus.UNAUTHORIZED)
-        .body(Map.of(
-            MESSAGE,
-            "Invalid username or password"
-        ));
+        .body(response);
   }
 
   /**

@@ -11,8 +11,8 @@ import lombok.Setter;
 @AllArgsConstructor
 @NoArgsConstructor
 public class LoginRequest {
-    @NotBlank(message = "Username tidak boleh kosong!")
+    @NotBlank(message = "Login failed: username cannot be empty!")
     private String username;
-    @NotBlank(message = "Password tidak boleh kosong")
+    @NotBlank(message = "Login failed: password cannot be empty!")
     private String password;
 }

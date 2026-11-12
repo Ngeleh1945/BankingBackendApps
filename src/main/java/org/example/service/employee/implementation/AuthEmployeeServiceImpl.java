@@ -1,13 +1,13 @@
 package org.example.service.employee.implementation;
 
-import java.util.Optional;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.example.dto.auth.LoginResult;
+import org.example.dto.auth.RegisterRequest;
+import org.example.dto.auth.RegisterResponse;
 import org.example.enums.EmployeeAccountMessage;
 import org.example.enums.LoginMessage;
-import org.example.model.employee.Employee;
 import org.example.model.employee.EmployeeAccount;
 import org.example.repository.employee.EmployeeAccountRepository;
 import org.example.repository.employee.EmployeeRepository;
@@ -35,32 +35,41 @@ public class AuthEmployeeServiceImpl implements AuthEmployeeService {
   private boolean isCookieSecure;
 
   @Override
-  public boolean registerEmployeesAccount(EmployeeAccount account, String adminId) {
-    if (adminId == null || adminId.isBlank()) {
-      throw new IllegalStateException(LoginMessage.INVALIDSESSION.getDesc());
-    }
+  public RegisterResponse registerEmployeesAccount(RegisterRequest request) {
 
-    Optional<EmployeeAccount> existingAccount =
-        authRepository.findByUsername(account.getUsername());
-    if (existingAccount.isPresent()) {
+    if (authRepository.existsByUsername(request.getUsername())) {
       throw new IllegalStateException(EmployeeAccountMessage.USERNAME_ALREADY_EXIST.getDesc());
     }
 
-    String rawPassword = account.getPassword();
+    String rawPassword = request.getPassword();
     String hashedPassword = BCrypt.hashpw(rawPassword, BCrypt.gensalt());
 
-    account.setPassword(hashedPassword);
-    authRepository.save(account);
-    log.info("Employee account registered successfully for username: {}", account.getUsername());
-    return true;
+    request.setPassword(hashedPassword);
+
+    EmployeeAccount employeeAccount = new EmployeeAccount();
+    employeeAccount.setEmployeeId(request.getEmployeeId());
+    employeeAccount.setUsername(request.getUsername());
+    employeeAccount.setPassword(request.getPassword());
+    employeeAccount.setRoleId(request.getRoleId());
+    authRepository.save(employeeAccount);
+    log.info("Employee account registered successfully for username: {}",
+        employeeAccount.getUsername());
+
+    return RegisterResponse.builder()
+        .employeeId(employeeAccount.getEmployeeId())
+        .username(employeeAccount.getUsername())
+        .password(employeeAccount.getPassword())
+        .roleId(employeeAccount.getRoleId())
+        .build();
   }
 
   @Override
   public LoginResult adminLogin(String username, String password) {
+
     EmployeeAccount user = authRepository
         .findByUsername(username)
         .orElseThrow(() -> new BadCredentialsException(
-            LoginMessage.USERNAMEANDPASSWORD_ISNULL.getDesc()
+            LoginMessage.ACCOUNT_NOTFOUND.getDesc()
         ));
 
     boolean valid = BCrypt.checkpw(password, user.getPassword());
@@ -87,20 +96,5 @@ public class AuthEmployeeServiceImpl implements AuthEmployeeService {
   @Override
   public void adminLogout(String username) {
     redisSessionService.deleteSession(username);
-  }
-
-  @Override
-  public EmployeeAccount getAccountByUsername(String username) {
-    return authRepository
-        .findByUsername(username)
-        .orElseThrow(() -> new IllegalArgumentException(
-            "Account dengan username " + username + " tidak ditemukan"));
-  }
-
-  private String searchName(String employeeId) {
-    return employeeRepository
-        .findById(employeeId)
-        .map(Employee::getFullName)
-        .orElse("STAFF ID : " + employeeId);
   }
 }
