@@ -43,10 +43,18 @@ public class AuthEmployeeServiceImpl implements AuthEmployeeService {
 
   @Override
   @Transactional
-  public RegisterResponse registerEmployeesAccount(RegisterRequest request) {
+  public RegisterResponse registerEmployeesAccount(@NotNull RegisterRequest request) {
+
+    if (authRepository.existsById(request.getEmployeeId())) {
+      throw new IllegalStateException(
+          EmployeeAccountMessage.EMPLOYEE_ALREADY_HAS_ACCOUNT.format(request.getEmployeeId()
+          ));
+    }
 
     if (authRepository.existsByUsername(request.getUsername())) {
-      throw new IllegalStateException(EmployeeAccountMessage.USERNAME_ALREADY_EXIST.getDesc());
+      throw new IllegalStateException(
+          EmployeeAccountMessage.USERNAME_ALREADY_EXISTS.format(request.getUsername()
+          ));
     }
 
     String rawPassword = request.getPassword();
@@ -60,13 +68,10 @@ public class AuthEmployeeServiceImpl implements AuthEmployeeService {
     employeeAccount.setPassword(request.getPassword());
     employeeAccount.setRoleId(request.getRoleId());
     authRepository.save(employeeAccount);
-    log.info("Employee account registered successfully for username: {}",
-        employeeAccount.getUsername());
 
     return RegisterResponse.builder()
         .employeeId(employeeAccount.getEmployeeId())
         .username(employeeAccount.getUsername())
-        .password(employeeAccount.getPassword())
         .roleId(employeeAccount.getRoleId())
         .build();
   }
@@ -129,17 +134,8 @@ public class AuthEmployeeServiceImpl implements AuthEmployeeService {
             LoginMessage.ACCOUNTWITHEMPLOYEEID_NOT_FOUND.format(employeeId)
         ));
 
-
-
-    boolean hasPermission = authentication.getAuthorities().stream()
-            .anyMatch(grantedAuthority ->
-                grantedAuthority.getAuthority().equals("Admin")
-                || grantedAuthority.getAuthority().equals("Super Admin")
-            );
-
-    if (!hasPermission) {
-      throw new AccessDeniedException("You are not authorized to update account role");
-    }
+    validateRolePermission(authentication);
+    validateAccountNotInUse(account, "modify");
 
     account.setRoleId(request.getRoleId());
 
@@ -147,7 +143,41 @@ public class AuthEmployeeServiceImpl implements AuthEmployeeService {
   }
 
   @Override
+  @Transactional
+  public void deleteAccount(String employeeId, Authentication authentication) {
+    EmployeeAccount account = authRepository.findById(employeeId)
+        .orElseThrow(() -> new EntityNotFoundException(
+            LoginMessage.ACCOUNTWITHEMPLOYEEID_NOT_FOUND.format(employeeId)
+        ));
+
+    validateRolePermission(authentication);
+    validateAccountNotInUse(account, "delete");
+
+    authRepository.delete(account);
+  }
+
+  @Override
   public void adminLogout(String username) {
     redisSessionService.deleteSession(username);
+  }
+
+  private void validateRolePermission(@NotNull Authentication authentication) {
+    boolean hasPermission = authentication.getAuthorities().stream()
+        .anyMatch(grantedAuthority ->
+            grantedAuthority.getAuthority().equals("Admin")
+            || grantedAuthority.getAuthority().equals("Super Admin")
+        );
+
+    if (!hasPermission) {
+      throw new AccessDeniedException("You are not authorized to update account role");
+    }
+  }
+
+  private void validateAccountNotInUse(EmployeeAccount account, String action) {
+    if (redisSessionService.hasActiveSession(account.getUsername())) {
+      throw new IllegalStateException(
+          "Cannot " + action + "account because it's currently in use"
+      );
+    }
   }
 }

@@ -55,6 +55,13 @@ public class RedisSessionServiceImpl implements RedisSessionService {
   }
 
   @Override
+  public boolean hasActiveSession(String username) {
+    return Boolean.TRUE.equals(
+        redisTemplate.hasKey(key(username))
+    );
+  }
+
+  @Override
   public void deleteSession(String username) {
     redisTemplate.delete(SESSION_PREFIX + username);
   }

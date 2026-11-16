@@ -1,11 +1,10 @@
 package org.example.service.employee;
 
 import java.util.List;
-import org.example.dto.employee.AddEmployeeResponse;
 import org.example.dto.employee.AddEmployeeRequest;
+import org.example.dto.employee.AddEmployeeResponse;
 import org.example.dto.employee.GetEmployeeByIdResponse;
 import org.example.dto.employee.ShowEmployeeResponse;
-import org.example.model.employee.Employee;
 
 /**
  * Service interface for managing employee data.
@@ -42,16 +41,18 @@ public interface EmployeeManagementService {
   ShowEmployeeResponse getEmployeeByUsername(String username);
 
   /**
+   * Deletes an employee record from the system based on their unique identifier.
    *
-   * @param employeeId
+   * @param employeeId the unique identifier of the employee to be deleted
    */
   void deleteEmployees(String employeeId);
 
   /**
+   * Updates an existing employee's details with the provided request data.
    *
-   * @param employeeId
-   * @param request
-   * @return
+   * @param employeeId the unique identifier of the employee to be updated
+   * @param request    the DTO containing the updated employee information
+   * @return an {@link AddEmployeeResponse} containing the updated employee details
    */
   AddEmployeeResponse update(String employeeId, AddEmployeeRequest request);
 }

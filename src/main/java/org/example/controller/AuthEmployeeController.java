@@ -26,6 +26,7 @@ import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.core.Authentication;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -60,7 +61,7 @@ public class AuthEmployeeController {
    * @param request the registration request body containing employee credentials and role details
    * @return ResponseEntity with a success message or bad request error description
    */
-  @PostMapping("/register-employee")
+  @PostMapping("/register-account")
   public ResponseEntity<ApiResponse<RegisterResponse>> registerEmployeesAccount(
       @Valid @RequestBody RegisterRequest request) {
     RegisterResponse response = authEmployeeService.registerEmployeesAccount(request);
@@ -181,6 +182,32 @@ public class AuthEmployeeController {
         .build();
 
     return ResponseEntity.ok(apiResponse);
+  }
+
+  /**
+   * Deletes an employee account from the system after verifying that the
+   * requesting user has the necessary authorization and permissions.
+   *
+   * @param employeeId     the unique identifier of the employee whose account is being deleted
+   * @param authentication the security context used to verify whether
+   *                       the current user is authorized to perform the deletion
+   * @return a {@link ResponseEntity} containing a standard
+   *      {@link ApiResponse} confirming the deletion
+   */
+  @DeleteMapping("/delete/account/{employeeId}")
+  public ResponseEntity<ApiResponse<Void>> deleteEmployeeAccount(
+      @PathVariable String employeeId,
+      @NotNull Authentication authentication
+  ) {
+    authEmployeeService.deleteAccount(employeeId, authentication);
+
+    return ResponseEntity.ok(
+        ApiResponse.<Void>builder()
+            .success(true)
+            .message("Account successfully deleted")
+            .data(null)
+            .build()
+    );
   }
 
   /**

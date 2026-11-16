@@ -12,6 +12,5 @@ import lombok.Getter;
 public class RegisterResponse {
   private String employeeId;
   private String username;
-  private String password;
   private String roleId;
 }

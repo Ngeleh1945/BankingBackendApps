@@ -14,12 +14,24 @@ public interface RedisSessionService {
   boolean createSession(String username, String token);
 
   /**
+   * Validates an active user session against the stored session ID in Redis
+   * and refreshes its expiration time (TTL) if valid.
    *
-   * @param username
-   * @param sessionId
-   * @return
+   * @param username  the username associated with the session
+   * @param sessionId the unique session identifier to validate
+   * @return {@code true} if the session is valid and successfully refreshed;
+   *         {@code false} otherwise
    */
   boolean validateAndRefreshSession(String username, String sessionId);
+
+  /**
+   * Checks whether the specified user currently has an active session stored in Redis.
+   *
+   * @param username the username to check for an active session
+   * @return {@code true} if an active session exists for the user;
+   *         {@code false} otherwise
+   */
+  boolean hasActiveSession(String username);
 
   /**
    * Deletes the active session for a user.
