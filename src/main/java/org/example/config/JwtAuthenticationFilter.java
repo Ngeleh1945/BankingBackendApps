@@ -8,9 +8,13 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.time.Duration;
-import java.util.Collections;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.example.model.employee.EmployeeAccount;
+import org.example.model.employee.RoleAccount;
+import org.example.repository.employee.EmployeeAccountRepository;
+import org.example.repository.employee.RoleAccountRepository;
 import org.example.service.jwt.JwtService;
 import org.example.service.session.RedisSessionService;
 import org.jetbrains.annotations.NotNull;
@@ -19,7 +23,10 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseCookie;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
@@ -34,6 +41,8 @@ import org.springframework.web.filter.OncePerRequestFilter;
 @Component
 @RequiredArgsConstructor
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
+  private final EmployeeAccountRepository accountRepository;
+  private final RoleAccountRepository roleAccountRepository;
 
   private static final String COOKIE_NAME = "accessToken";
 
@@ -169,13 +178,23 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
   private void setAuthentication(
       String username,
-      HttpServletRequest request) {
+      HttpServletRequest request
+  ) {
+    EmployeeAccount account = accountRepository.findByUsername(username)
+        .orElseThrow(() -> new UsernameNotFoundException("Employee account not found"));
+
+    RoleAccount roleAccount = roleAccountRepository.findById(account.getRoleId())
+        .orElseThrow(() -> new IllegalStateException("Employee role not found"));
+
+    List<GrantedAuthority> authorities = List.of(
+        new SimpleGrantedAuthority(roleAccount.getDescription())
+    );
 
     UsernamePasswordAuthenticationToken authentication =
         new UsernamePasswordAuthenticationToken(
             username,
             null,
-            Collections.emptyList()
+            authorities
         );
 
     authentication.setDetails(

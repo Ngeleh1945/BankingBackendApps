@@ -23,12 +23,10 @@ public class BankCodeServiceImpl implements BankCodeService {
 
   @Override
   public ShowBankCode addBankCode(BankCodeRequest request) {
-    BankCode banks = BankCode
-        .builder()
-        .codeBank(request.getCodeBank())
-        .bankName(request.getBankName())
-        .swiftCode(request.getSwiftCode())
-        .build();
+    BankCode banks = new BankCode();
+    banks.setCodeBank(request.getCodeBank());
+    banks.setBankName(request.getBankName());
+    banks.setSwiftCode(request.getSwiftCode());
 
     BankCode saved = repository.save(banks);
     return ShowBankCode

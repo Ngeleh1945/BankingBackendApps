@@ -216,6 +216,6 @@ public class EmployeeManagementServiceImpl implements EmployeeManagementService 
   }
 
   private String messageNotFound(String employeeId) {
-    return "Employee with ID " + employeeId + " not found";
+    return EmployeeMessage.NOT_FOUND.format(employeeId);
   }
 }

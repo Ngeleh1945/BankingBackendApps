@@ -31,7 +31,7 @@ public class RegisterRequest {
   private String password;
 
   /**
-   * Role identifier (Role ID) assigned to the new user.
+   * RoleAccount identifier (RoleAccount ID) assigned to the new user.
    * Determines authorization boundaries within the application module.
    */
   @NotBlank(message = "Role id cannot be blank!")

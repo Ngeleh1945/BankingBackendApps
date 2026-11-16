@@ -3,6 +3,7 @@ package org.example.controller;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import java.time.Duration;
+import java.util.List;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -11,6 +12,7 @@ import org.example.dto.auth.LoginResult;
 import org.example.dto.auth.LogoutResponse;
 import org.example.dto.auth.RegisterRequest;
 import org.example.dto.auth.RegisterResponse;
+import org.example.dto.auth.ShowAccountEmployeeResponse;
 import org.example.dto.common.ApiResponse;
 import org.example.model.employee.EmployeeAccount;
 import org.example.service.employee.AuthEmployeeService;
@@ -25,7 +27,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -106,6 +110,77 @@ public class AuthEmployeeController {
     return ResponseEntity.ok(
         Map.of(MESSAGE_KEY, "Login success!")
     );
+  }
+
+  /**
+   * Retrieves a comprehensive list of all registered employee accounts.
+   * Wraps the retrieved list of employee account profiles within a standardized API response.
+   *
+   * @return a {@link ResponseEntity} containing an {@link ApiResponse} with a list of
+   *     {@link ShowAccountEmployeeResponse} objects
+   */
+  @GetMapping("/show-accounts")
+  public ResponseEntity<ApiResponse<List<ShowAccountEmployeeResponse>>> getAllAccounts() {
+    List<ShowAccountEmployeeResponse> employeeAccounts =
+        authEmployeeService.showAccounts();
+
+    ApiResponse<List<ShowAccountEmployeeResponse>> apiResponse = ApiResponse
+        .<List<ShowAccountEmployeeResponse>>builder()
+        .success(true)
+        .message("Employee accounts successfully retrieved")
+        .data(employeeAccounts)
+        .build();
+
+    return ResponseEntity.ok(apiResponse);
+  }
+
+  /**
+   * Retrieves an employee account by its unique employee identifier.
+   *
+   * @param employeeId the unique identifier of the employee whose account is being requested
+   * @return a {@link ResponseEntity} containing a standard {@link ApiResponse}
+   *         with the retrieved {@link EmployeeAccount} data
+   */
+  @GetMapping("/account-{employeeId}")
+  public ResponseEntity<ApiResponse<EmployeeAccount>> getAccountById(
+      @PathVariable String employeeId
+  ) {
+    EmployeeAccount response = authEmployeeService.getAccountById(employeeId);
+
+    ApiResponse<EmployeeAccount> apiResponse = ApiResponse.<EmployeeAccount>builder()
+        .success(true)
+        .message("Account successfully retrieved")
+        .data(response)
+        .build();
+
+    return ResponseEntity.ok(apiResponse);
+  }
+
+  /**
+   * Updates the role assigned to a specific employee account.
+   *
+   * @param employeeId     the unique identifier of the employee whose account role is being updated
+   * @param request        the request payload containing the new role details
+   * @param authentication the current security authentication context
+   *                       of the user performing the request
+   * @return a {@link ResponseEntity} containing a standard {@link ApiResponse}
+   *         with the updated {@link EmployeeAccount} data
+   */
+  @PutMapping("/update/{employeeId}/role")
+  public ResponseEntity<ApiResponse<EmployeeAccount>> updateRole(
+      @PathVariable String employeeId,
+      @Valid @RequestBody EmployeeAccount request,
+      @NotNull Authentication authentication
+  ) {
+    EmployeeAccount response = authEmployeeService.updateRole(employeeId, request, authentication);
+
+    ApiResponse<EmployeeAccount> apiResponse = ApiResponse.<EmployeeAccount>builder()
+        .success(true)
+        .message("Employee account role updated successfully")
+        .data(response)
+        .build();
+
+    return ResponseEntity.ok(apiResponse);
   }
 
   /**

@@ -22,9 +22,9 @@ public class BankCodeController {
    * Retrieves a list of all available bank code configurations.
    *
    * @return a {@link ResponseEntity}
-   * containing a list of {@link ShowBankCode} objects with HTTP 200 status
+   *      containing a list of {@link ShowBankCode} objects with HTTP 200 status
    */
-  @GetMapping("/getAllBankName")
+  @GetMapping("/all-bankname")
   public ResponseEntity<List<ShowBankCode>> getAllBankName() {
     return ResponseEntity.ok(service.findAllBank());
   }

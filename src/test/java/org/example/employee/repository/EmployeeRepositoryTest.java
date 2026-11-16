@@ -13,8 +13,10 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.stream.Stream;
 import org.example.constant.BankConstant;
+import org.example.enums.EmployeeMessage;
 import org.example.model.employee.Employee;
 import org.example.repository.employee.EmployeeRepository;
+import org.example.service.employee.EmployeeManagementService;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -37,6 +39,9 @@ import org.springframework.transaction.support.TransactionTemplate;
 class EmployeeRepositoryTest {
   @Autowired
   private EmployeeRepository repository;
+
+  @Autowired
+  EmployeeManagementService service;
 
   @Autowired
   private PlatformTransactionManager transactionManager;

@@ -1,9 +1,10 @@
 package org.example.enums;
 
 public enum EmployeeMessage {
-    ALREADY_EXIST("KARYAWAN DENGAN ID %s SUDAH TERDAFTAR!"),
-    CANNOT_NULL("DATA KARYAWAN ATAU ID TIDAK BOLEH KOSONG!"),
-    ADD_SUCCESS("KARYAWAN BERHASIL DITAMBAHKAN!");
+    ALREADY_EXIST("Employee with ID %s is already registered"),
+    NOT_FOUND("Employee with ID %s is not found"),
+    CANNOT_NULL("Employee data or ID cannot be empty"),
+    ADD_SUCCESS("Employee has been successfully added");
 
     private String desc;
 
@@ -13,5 +14,9 @@ public enum EmployeeMessage {
 
     public String getDesc() {
         return desc;
+    }
+
+    public String format(Object... args) {
+        return String.format(desc, args);
     }
 }
